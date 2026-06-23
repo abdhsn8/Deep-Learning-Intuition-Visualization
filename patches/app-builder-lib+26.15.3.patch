@@ -1,0 +1,78 @@
+diff --git a/node_modules/app-builder-lib/out/targets/nsis/NsisTarget.js b/node_modules/app-builder-lib/out/targets/nsis/NsisTarget.js
+index 92cac56..c6abacf 100644
+--- a/node_modules/app-builder-lib/out/targets/nsis/NsisTarget.js
++++ b/node_modules/app-builder-lib/out/targets/nsis/NsisTarget.js
+@@ -353,25 +353,34 @@ class NsisTarget extends core_1.Target {
+         await this.executeMakensis(defines, commands, sharedHeader + (await this.computeFinalScript(script, false, archs)));
+         // http://forums.winamp.com/showthread.php?p=3078545
+         // TODO: remove workaround when wine is fully upgraded to 11
+-        if ((0, macosVersion_1.isMacOsCatalina)()) {
+-            try {
+-                await nsisUtil_1.UninstallerReader.exec(installerPath, uninstallerPath);
+-            }
+-            catch (error) {
+-                builder_util_1.log.warn(`packager.vm is used: ${error.message}`);
+-                const vm = await packager.vm.value;
+-                await vm.exec(installerPath, []);
+-                // Parallels VM can exit after command execution, but NSIS continue to be running
+-                let i = 0;
+-                while (!(await (0, builder_util_1.exists)(uninstallerPath)) && i++ < 100) {
+-                    // noinspection JSUnusedLocalSymbols
+-                    await new Promise((resolve, _reject) => setTimeout(resolve, 300));
++        let uninstallerExtracted = false;
++        try {
++            await nsisUtil_1.UninstallerReader.exec(installerPath, uninstallerPath);
++            uninstallerExtracted = true;
++        }
++        catch (error) {
++            builder_util_1.log.warn(`Static uninstaller reader failed: ${error.message}. Falling back to execution.`);
++        }
++        if (!uninstallerExtracted) {
++            if ((0, macosVersion_1.isMacOsCatalina)()) {
++                try {
++                    const vm = await packager.vm.value;
++                    await vm.exec(installerPath, []);
++                    // Parallels VM can exit after command execution, but NSIS continue to be running
++                    let i = 0;
++                    while (!(await (0, builder_util_1.exists)(uninstallerPath)) && i++ < 100) {
++                        // noinspection JSUnusedLocalSymbols
++                        await new Promise((resolve, _reject) => setTimeout(resolve, 300));
++                    }
++                }
++                catch (error) {
++                    builder_util_1.log.warn(`packager.vm is used: ${error.message}`);
+                 }
+             }
+-        }
+-        else {
+-            const wineVm = new WineVm_1.WineVmManager((_a = packager.config.toolsets) === null || _a === void 0 ? void 0 : _a.wine);
+-            await wineVm.exec(installerPath, [], { env: { __COMPAT_LAYER: "RunAsInvoker" } });
++            else {
++                const wineVm = new WineVm_1.WineVmManager((_a = packager.config.toolsets) === null || _a === void 0 ? void 0 : _a.wine);
++                await wineVm.exec(installerPath, [], { env: { __COMPAT_LAYER: "RunAsInvoker" } });
++            }
+         }
+         await packager.signIf(uninstallerPath);
+         delete defines.BUILD_UNINSTALLER;
+diff --git a/node_modules/app-builder-lib/out/vm/WineVm.js b/node_modules/app-builder-lib/out/vm/WineVm.js
+index dd689aa..0989608 100644
+--- a/node_modules/app-builder-lib/out/vm/WineVm.js
++++ b/node_modules/app-builder-lib/out/vm/WineVm.js
+@@ -26,7 +26,16 @@ class WineVmManager extends vm_1.VmManager {
+             options.timeout = 120 * 1000;
+         }
+         if (process.platform === "win32") {
+-            return (0, builder_util_1.exec)(target, appArgs, options);
++            const execOptions = { ...options };
++            if (execOptions.env != null) {
++                execOptions.env = { ...process.env, ...execOptions.env };
++            }
++            console.log("--- WINEVM SPAWNING ON WIN32 ---");
++            console.log("Target:", target);
++            console.log("Args:", appArgs);
++            console.log("Env keys:", execOptions.env ? Object.keys(execOptions.env) : "none");
++            console.log("--------------------------------");
++            return (0, builder_util_1.exec)(target, appArgs, execOptions);
+         }
+         const { execPath: wineExe, env: wineEnv } = await (0, wine_1.getWineToolset)(toolset);
+         // Preserve the base process environment (PATH, HOME, TMPDIR, etc.) so Wine and child

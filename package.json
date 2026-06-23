@@ -1,0 +1,93 @@
+{
+  "name": "deep-learning-intuition",
+  "version": "1.0.0",
+  "description": "Interactive visualizer for deep learning architectures",
+  "main": "main.js",
+  "author": "Abdullah Hasan",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
+    "dist": "electron-builder",
+    "postinstall": "patch-package"
+  },
+  "build": {
+    "appId": "com.abdullahhasan.dl-intuition",
+    "productName": "Deep Learning Intuition",
+    "copyright": "Copyright © 2025 Abdullah Hasan",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "app/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron-builder/**/*",
+      "!node_modules/electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Deep Learning Intuition",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.education",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "assets/icon.png",
+      "category": "Education",
+      "description": "Interactive visualizer for deep learning architectures"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.0.12",
+    "patch-package": "^8.0.1"
+  }
+}

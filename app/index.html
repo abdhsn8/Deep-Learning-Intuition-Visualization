@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Learning Intuition — Abdullah Hasan</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"></script>
+<style>
+:root{--bg-dark:#0f1117;--bg-panel:#16181f;--bg-mid:#1e2130;--border:#2e3148;--accent1:#4a8ef5;--accent2:#e05a5a;--accent3:#3ec97a;--text-main:#e8eaf0;--text-dim:#8890a8;--text-eq:#1a1a3a;--eq-bg:#f5f5ff;--tab-bg:#1a1d28;--control-bg:#1e2130;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg-dark);color:var(--text-main);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+#topbar{display:flex;align-items:center;gap:12px;padding:7px 16px;background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0;}
+#topbar h1{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;}
+#topbar span{font-size:12px;color:var(--text-dim);}
+#uploadBtn{margin-left:auto;padding:5px 14px;background:var(--accent1);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s;}
+#uploadBtn:hover{opacity:.85;}
+#imgLabel{font-size:11px;color:var(--accent3);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#fileInput{display:none;}
+#main{display:flex;flex:1;overflow:hidden;}
+#sidebar{width:196px;flex-shrink:0;background:var(--bg-panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:10px 7px;gap:3px;overflow-y:auto;}
+.mod-btn{padding:8px 9px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--text-dim);font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s;line-height:1.35;}
+.mod-btn:hover{background:var(--bg-mid);color:var(--text-main);}
+.mod-btn.active{background:var(--accent1);color:#fff;border-color:var(--accent1);font-weight:700;}
+#sidebar-footer{margin-top:auto;font-size:10px;color:var(--text-dim);text-align:center;padding-top:8px;}
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#eqbar{background:var(--eq-bg);border-bottom:1px solid #c8c8e0;padding:5px 14px;flex-shrink:0;}
+#eqTitle{font-size:11px;font-weight:700;color:#3535a0;margin-bottom:1px;}
+#eqText{font-size:10.5px;color:var(--text-eq);font-family:'Consolas','Courier New',monospace;line-height:1.5;white-space:pre-wrap;}
+#vizArea{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#tabBar{display:flex;background:var(--tab-bg);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.tab-btn{padding:6px 14px;border:none;background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;}
+.tab-btn:hover{color:var(--text-main);}
+.tab-btn.active{color:#fff;border-bottom-color:var(--accent1);font-weight:600;}
+#canvasWrap{flex:1;position:relative;overflow:hidden;background:var(--bg-dark);}
+#canvasWrap canvas{position:absolute;top:0;left:0;}
+.plotly-container{position:absolute;top:0;left:0;width:100%;height:100%;}
+#controls{height:92px;flex-shrink:0;background:var(--control-bg);border-top:1px solid var(--border);padding:5px 10px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;overflow:hidden;}
+.ctrl-group{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.ctrl-label{font-size:11px;color:var(--text-dim);white-space:nowrap;}
+.ctrl-val{font-size:11px;font-weight:700;color:var(--accent1);min-width:30px;}
+input[type=range]{width:100px;accent-color:var(--accent1);cursor:pointer;}
+select{padding:3px 5px;background:var(--bg-mid);border:1px solid var(--border);border-radius:5px;color:var(--text-main);font-size:11px;cursor:pointer;}
+.anim-btn{padding:5px 11px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .2s;color:#fff;white-space:nowrap;}
+.anim-btn:hover{opacity:.85;}
+.info-label{font-size:10px;color:var(--text-dim);font-style:italic;flex-basis:100%;}
+#theoryPane{position:absolute;top:0;left:0;width:100%;height:100%;background:var(--bg-dark);overflow-y:auto;padding:18px 26px;display:none;}
+#theoryPane.visible{display:block;}
+.theory-block{margin-bottom:16px;}
+.theory-h1{font-size:16px;font-weight:700;color:#a0b4ff;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.theory-h2{font-size:13px;font-weight:700;color:#70d4a0;margin-bottom:4px;margin-top:11px;}
+.theory-eq{font-family:'Consolas','Courier New',monospace;font-size:12px;background:#1a1d2e;border-left:3px solid var(--accent1);padding:8px 12px;border-radius:0 5px 5px 0;color:#c8d8ff;margin:4px 0;line-height:1.75;}
+.theory-p{font-size:12px;color:#b0b8cc;line-height:1.65;margin-top:4px;}
+.theory-insight{background:#1a2820;border:1px solid #2e5040;border-radius:6px;padding:8px 12px;font-size:11.5px;color:#80d4a8;margin-top:6px;font-style:italic;}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>Deep Learning Intuition</h1>
+  <span>by Abdullah Hasan</span>
+  <button id="uploadBtn">+ Upload Image</button>
+  <input type="file" id="fileInput" accept="image/*">
+  <span id="imgLabel">Using: built-in test image</span>
+</div>
+<div id="main">
+  <div id="sidebar">
+    <button class="mod-btn active" data-mod="cnn1">CNN Foundations</button>
+    <button class="mod-btn" data-mod="cnn2">CNN Architectures</button>
+    <button class="mod-btn" data-mod="rnn">RNN / LSTM / Attention</button>
+    <button class="mod-btn" data-mod="trans">Transformer</button>
+    <button class="mod-btn" data-mod="vae">VAE</button>
+    <button class="mod-btn" data-mod="gan">GAN + Norm. Flows</button>
+    <button class="mod-btn" data-mod="diff">Diffusion Models</button>
+    <div id="sidebar-footer">© Abdullah Hasan</div>
+  </div>
+  <div id="content">
+    <div id="eqbar">
+      <div id="eqTitle">CNN Foundations — 2D Cross-Correlation</div>
+      <div id="eqText">Y[i,j] = ΣΣ X[i·S+m, j·S+n]·W[m,n]     N_out = ⌊(N+2P−K)/S⌋+1</div>
+    </div>
+    <div id="vizArea">
+      <div id="tabBar"></div>
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="plotlyDiv" class="plotly-container" style="display:none"></div>
+        <div id="theoryPane"></div>
+      </div>
+    </div>
+    <div id="controls"></div>
+  </div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('mainCanvas');
+const ctx    = canvas.getContext('2d');
+const plotlyDiv  = document.getElementById('plotlyDiv');
+const theoryPane = document.getElementById('theoryPane');
+let W = 0, H = 0;
+
+let state = {
+  mod:'cnn1', tab:0,
+  K:3, S:1, P:0, layers:1, filterType:'Edge (Sobel-X)',
+  depth:3, channels:64,
+  seqLen:20, rnnType:'Vanilla RNN', wnorm:0.9,
+  temp:1.0, dk:32, nHeads:4, patchSize:16,
+  beta:1.0, latDim:2, mu:0.0, sigma:1.0,
+  ganStep:25, overlap:0.5, ganMode:'GAN (JS)', flowSteps:3,
+  timestep:500, schedule:'Linear', totalT:1000, eta:0.0, revSteps:20,
+  animRunning:false
+};
+
+let uploadedImageData = null;
+let grayPixels = null;
+let imgW = 128, imgH = 128;
+
+// ═══════════════════════════════════════════════════════════════
+// BUILT-IN TEST IMAGE
+// ═══════════════════════════════════════════════════════════════
+function makeTestImage() {
+  const off = document.createElement('canvas');
+  off.width = off.height = 128;
+  const c = off.getContext('2d');
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+    const ch = (Math.floor(x/16)+Math.floor(y/16))%2;
+    c.fillStyle=`rgb(${ch?(x*2)&255:60},${ch?40:(y*2)&255},128)`;
+    c.fillRect(x,y,1,1);
+  }
+  setImage(c.getImageData(0,0,128,128),128,128);
+}
+
+function setImage(imageData,w,h) {
+  imgW=w; imgH=h; uploadedImageData=imageData;
+  grayPixels=new Float32Array(w*h);
+  const d=imageData.data;
+  for(let i=0;i<w*h;i++) grayPixels[i]=(0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2])/255;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MATH HELPERS
+// ═══════════════════════════════════════════════════════════════
+function mulberry32(seed){
+  return function(){
+    seed|=0; seed=seed+0x6D2B79F5|0;
+    let t=Math.imul(seed^seed>>>15,1|seed);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function randn(rng){
+  const u1=rng(),u2=rng();
+  return Math.sqrt(-2*Math.log(u1+1e-10))*Math.cos(2*Math.PI*u2);
+}
+function linspace(a,b,n){
+  const arr=[];
+  for(let i=0;i<n;i++) arr.push(a+(b-a)*i/(n-1));
+  return arr;
+}
+function normpdf(x,mu,sigma){
+  return Math.exp(-0.5*((x-mu)/sigma)**2)/(sigma*Math.sqrt(2*Math.PI));
+}
+function softmaxRows(E,n){
+  const A=new Float32Array(n*n);
+  for(let i=0;i<n;i++){
+    let mx=-Infinity;
+    for(let j=0;j<n;j++) mx=Math.max(mx,E[i*n+j]);
+    let s=0;
+    for(let j=0;j<n;j++){A[i*n+j]=Math.exp(E[i*n+j]-mx);s+=A[i*n+j];}
+    for(let j=0;j<n;j++) A[i*n+j]/=s;
+  }
+  return A;
+}
+function conv2D(img,w,h,kernel,K,stride,pad){
+  const outH=Math.max(Math.floor((h+2*pad-K)/stride)+1,1);
+  const outW=Math.max(Math.floor((w+2*pad-K)/stride)+1,1);
+  const fm=new Float32Array(outH*outW);
+  for(let oi=0;oi<outH;oi++) for(let oj=0;oj<outW;oj++){
+    let s=0;
+    for(let m=0;m<K;m++) for(let n2=0;n2<K;n2++){
+      const yi=oi*stride+m-pad, xi=oj*stride+n2-pad;
+      if(yi>=0&&yi<h&&xi>=0&&xi<w) s+=img[yi*w+xi]*kernel[m*K+n2];
+    }
+    fm[oi*outW+oj]=s;
+  }
+  return{fm,outW,outH};
+}
+function computeSchedule(T,sched){
+  const beta=new Float32Array(T), abar=new Float32Array(T);
+  if(sched==='Cosine'){
+    const s=0.008, f0=Math.cos(s/(1+s)*Math.PI/2)**2;
+    for(let i=0;i<T;i++){
+      const tn=(i+1)/T;
+      abar[i]=Math.min(Math.cos((tn+s)/(1+s)*Math.PI/2)**2/f0,1);
+    }
+    beta[0]=1-abar[0];
+    for(let i=1;i<T;i++) beta[i]=Math.min(1-abar[i]/abar[i-1],0.999);
+  } else {
+    let prod=1;
+    for(let i=0;i<T;i++){beta[i]=1e-4+(0.02-1e-4)*i/(T-1); prod*=(1-beta[i]); abar[i]=prod;}
+  }
+  return{beta,abar};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KERNELS
+// ═══════════════════════════════════════════════════════════════
+const KERNELS={
+  'Edge (Sobel-X)':[1,0,-1,1,0,-1,1,0,-1],
+  'Edge (Sobel-Y)':[1,1,1,0,0,0,-1,-1,-1],
+  'Sharpen':[0,-1,0,-1,5,-1,0,-1,0],
+  'Blur (Gaussian)':[1/16,2/16,1/16,2/16,4/16,2/16,1/16,2/16,1/16],
+  'Edge (Laplacian)':[0,1,0,1,-4,1,0,1,0],
+  'Emboss':[-2,-1,0,-1,1,1,0,1,2]
+};
+function getKernel(K,ft){
+  if(K===3) return KERNELS[ft]||KERNELS['Edge (Sobel-X)'];
+  const k=new Float32Array(K*K), half=Math.floor(K/2);
+  if(ft.includes('Sobel-X')){for(let m=0;m<K;m++) for(let n=0;n<K;n++) k[m*K+n]=n-half;}
+  else if(ft.includes('Sobel-Y')){for(let m=0;m<K;m++) for(let n=0;n<K;n++) k[m*K+n]=m-half;}
+  else if(ft==='Blur (Gaussian)'){
+    let s=0; for(let m=0;m<K;m++) for(let n=0;n<K;n++){const v=Math.exp(-((m-half)**2+(n-half)**2)/(2*(K/4)**2)); k[m*K+n]=v; s+=v;}
+    for(let i=0;i<K*K;i++) k[i]/=s;
+  } else if(ft==='Sharpen'){for(let i=0;i<K*K;i++) k[i]=-1/(K*K-1); k[half*K+half]=2-1/(K*K-1);}
+  else if(ft.includes('Laplacian')){for(let i=0;i<K*K;i++) k[i]=-1; k[half*K+half]=K*K-1;}
+  else {for(let m=0;m<K;m++) for(let n=0;n<K;n++) k[m*K+n]=(n-m>0?1:n-m<0?-1:0);}
+  return k;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COLOR MAPS
+// ═══════════════════════════════════════════════════════════════
+function jetColor(t){
+  t=Math.max(0,Math.min(1,t));
+  let r,g,b;
+  if(t<0.25){r=0;g=4*t;b=1;}
+  else if(t<0.5){r=0;g=1;b=1-4*(t-0.25);}
+  else if(t<0.75){r=4*(t-0.5);g=1;b=0;}
+  else{r=1;g=1-4*(t-0.75);b=0;}
+  return[r*255,g*255,b*255];
+}
+function hotColor(t){
+  t=Math.max(0,Math.min(1,t));
+  return[Math.min(t*3,1)*255,Math.min(Math.max(t*3-1,0),1)*255,Math.min(Math.max(t*3-2,0),1)*255];
+}
+function coolColor(t){
+  t=Math.max(0,Math.min(1,t));
+  return[t*255,(1-t)*255,255];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAW HELPERS
+// ═══════════════════════════════════════════════════════════════
+function drawImageGray(pixels,iw,ih,x,y,dw,dh){
+  const off=document.createElement('canvas'); off.width=iw; off.height=ih;
+  const c2=off.getContext('2d'), id=c2.createImageData(iw,ih);
+  for(let i=0;i<iw*ih;i++){const v=Math.max(0,Math.min(255,pixels[i]*255)); id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255;}
+  c2.putImageData(id,0,0); ctx.drawImage(off,x,y,dw,dh);
+}
+function drawImageColormap(fm,outW,outH,x,y,dw,dh,cmFn){
+  let mn=Infinity,mx=-Infinity;
+  for(let i=0;i<fm.length;i++){mn=Math.min(mn,fm[i]);mx=Math.max(mx,fm[i]);}
+  const rng=mx-mn||1;
+  const off=document.createElement('canvas'); off.width=outW; off.height=outH;
+  const c2=off.getContext('2d'), id=c2.createImageData(outW,outH);
+  for(let i=0;i<outW*outH;i++){const[r,g,b]=cmFn((fm[i]-mn)/rng); id.data[i*4]=r;id.data[i*4+1]=g;id.data[i*4+2]=b;id.data[i*4+3]=255;}
+  c2.putImageData(id,0,0); ctx.drawImage(off,x,y,dw,dh);
+}
+function lbl(text,x,y,size=12,color='#ccc',align='left',bold=false,italic=false){
+  ctx.save();
+  ctx.font=`${italic?'italic ':' '}${bold?'bold ':' '}${size}px "Consolas","Courier New",monospace`;
+  ctx.fillStyle=color; ctx.textAlign=align; ctx.textBaseline='middle';
+  ctx.fillText(text,x,y); ctx.restore();
+}
+function hline(x1,y1,x2,y2,color='#555',lw=1,dash=[]){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+}
+function fillRect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(x,y,w,h);}
+function strokeRect(x,y,w,h,stroke,lw=1){ctx.save();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.strokeRect(x,y,w,h);ctx.restore();}
+function roundRect(x,y,w,h,fill,stroke,lw=1.5,r=8){
+  ctx.save();ctx.lineWidth=lw;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
+  ctx.restore();
+}
+function circle(x,y,r,fill,stroke,lw=1.5){
+  ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+  ctx.restore();
+}
+function arrow(x1,y1,x2,y2,color='#888',lw=1.5){
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=lw;
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
+  const ux=dx/len,uy=dy/len,hw=6,hh=4;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-ux*hw,y2-uy*hw);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*hw-uy*hh,y2-uy*hw+ux*hh);ctx.lineTo(x2-ux*hw+uy*hh,y2-uy*hw-ux*hh);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+function drawAxes(x,y,w,h,opts={}){
+  const{xLabel='',yLabel='',title='',xMin=0,xMax=1,yMin=0,yMax=1,xTicks=5,yTicks=5,gridColor='#252840',tickColor='#555',labelSize=10}=opts;
+  ctx.save();
+  ctx.strokeStyle=gridColor;ctx.lineWidth=0.5;ctx.setLineDash([3,3]);
+  for(let i=0;i<=xTicks;i++){const px=x+w*i/xTicks;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px,y+h);ctx.stroke();}
+  for(let i=0;i<=yTicks;i++){const py=y+h-h*i/yTicks;ctx.beginPath();ctx.moveTo(x,py);ctx.lineTo(x+w,py);ctx.stroke();}
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#3a3d58';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+  if(title) lbl(title,x+w/2,y-13,labelSize+1,'#aac','center',true);
+  if(xLabel) lbl(xLabel,x+w/2,y+h+20,labelSize,'#778','center');
+  if(yLabel){ctx.save();ctx.translate(x-30,y+h/2);ctx.rotate(-Math.PI/2);lbl(yLabel,0,0,labelSize,'#778','center');ctx.restore();}
+  ctx.fillStyle=tickColor;ctx.font=`${labelSize-1}px monospace`;ctx.textAlign='center';ctx.textBaseline='top';
+  for(let i=0;i<=xTicks;i++){
+    const v=xMin+(xMax-xMin)*i/xTicks;
+    const txt=Math.abs(v)>=100?v.toFixed(0):Math.abs(v)>=10?v.toFixed(1):v.toFixed(2);
+    ctx.fillText(txt,x+w*i/xTicks,y+h+3);
+  }
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let i=0;i<=yTicks;i++){
+    const v=yMin+(yMax-yMin)*i/yTicks;
+    const txt=Math.abs(v)>=100?v.toFixed(0):Math.abs(v)>=10?v.toFixed(1):v.toFixed(2);
+    ctx.fillText(txt,x-4,y+h-h*i/yTicks);
+  }
+  ctx.restore();
+  return(vx,vy)=>({px:x+(vx-xMin)/(xMax-xMin)*w, py:y+h-(vy-yMin)/(yMax-yMin)*h});
+}
+function logMap10(mx,my,mw,mh,T,logMin=-8,logMax=0.3){
+  return(vx,vy)=>({
+    px:mx+mw*vx/T,
+    py:my+mh*(1-Math.max(0,Math.min(1,(Math.log10(Math.max(vy,1e-12))-logMin)/(logMax-logMin))))
+  });
+}
+function plotLine(mapFn,xs,ys,color,lw=2,dashed=false){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=lw;
+  if(dashed)ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  for(let i=0;i<xs.length;i++){const{px,py}=mapFn(xs[i],ys[i]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+  ctx.stroke();ctx.restore();
+}
+function plotFill(mapFn,xs,ys,color,alpha=0.28){
+  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;
+  ctx.beginPath();
+  const{px:px0,py:py0}=mapFn(xs[0],0);ctx.moveTo(px0,py0);
+  for(let i=0;i<xs.length;i++){const{px,py}=mapFn(xs[i],ys[i]);ctx.lineTo(px,py);}
+  const{px:pxN}=mapFn(xs[xs.length-1],0);ctx.lineTo(pxN,py0);
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function colorbar(x,y,w,h,cmFn){
+  for(let i=0;i<h;i++){const[r,g,b]=cmFn(1-i/h);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(x,y+i,w,1);}
+  strokeRect(x,y,w,h,'#666',1);
+}
+// ═══════════════════════════════════════════════════════════════
+// MODULE DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+const MODULES={
+  cnn1:{title:'CNN Foundations — 2D Cross-Correlation',
+    eq:'Y[i,j] = ΣΣ X[i·S+m, j·S+n]·W[m,n]     N_out = ⌊(N+2P−K)/S⌋+1     Conv: K² params vs FC: H·W·C_out',
+    tabs:['Input & Kernel','Feature Map','Output Size','Receptive Field','Theory']},
+  cnn2:{title:'CNN Architectures — Residual Learning',
+    eq:'H(x) = F(x) + x     ∂L/∂x₀ = ∂L/∂xₗ·(1 + ∂F/∂x₀)     "+1" term = gradient highway, never vanishes',
+    tabs:['Residual Block','Gradient Flow','Loss Landscape','Arch Compare','Theory']},
+  rnn:{title:'RNN / LSTM / Bahdanau Attention',
+    eq:'h_t=tanh(W_h·h_{t-1}+W_x·x_t)    LSTM: C_t=f_t⊙C_{t-1}+i_t⊙C̃_t    ∂C_t/∂C_{t-1}=f_t  (no matrix!)',
+    tabs:['Gradient Decay','LSTM Gates','Cell Highway','Attention','Theory']},
+  trans:{title:'Transformer — Scaled Dot-Product Attention',
+    eq:'Attention(Q,K,V) = softmax(QKᵀ/√dₖ)·V    Q=XW^Q  K=XW^K  V=XW^V    MultiHead=Concat(h₁…hₙ)·W^O',
+    tabs:['Patch Attention','Q·Kᵀ/√dₖ','Positional Enc.','Multi-Head','Theory']},
+  vae:{title:'VAE — Evidence Lower Bound (ELBO)',
+    eq:'ELBO = E[log p(x|z)] − β·KL(q||p)     KL = ½Σ(μ²+σ²−log σ²−1)     z = μ + σ·ε,  ε~N(0,I)',
+    tabs:['Prior vs Posterior','KL Surface (3D)','Reparameterization','ELBO Trade-off','Theory']},
+  gan:{title:'GAN + Normalizing Flows — Adversarial Divergences',
+    eq:'min_G max_D E[logD(x)]+E[log(1−D(G(z)))]    W₁=sup_{||f||_L≤1}(E_p[f]−E_q[f])    log p_X=log p_Z+log|det J|',
+    tabs:['Real vs Fake','JSD vs W₁','Mode Collapse','Norm. Flow','Theory']},
+  diff:{title:'Diffusion Models — DDPM + DDIM  (Week 15)',
+    eq:'q(x_t|x_0)=N(√ᾱ_t·x_0,(1−ᾱ_t)I)   x_t=√ᾱ_t·x_0+√(1−ᾱ_t)·ε   L=E||ε−ε_θ||²   s_θ=−ε_θ/√(1−ᾱ_t)',
+    tabs:['Forward Process','Reverse Process','Noise Schedule','Score + DDIM','Theory']}
+};
+
+// ═══════════════════════════════════════════════════════════════
+// UI BUILDING
+// ═══════════════════════════════════════════════════════════════
+function buildUI(mod){
+  const tabBar=document.getElementById('tabBar');
+  tabBar.innerHTML='';
+  MODULES[mod].tabs.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='tab-btn'+(i===state.tab?' active':'');
+    b.textContent=t;
+    b.onclick=()=>{state.tab=i;activateTab(i);render();};
+    tabBar.appendChild(b);
+  });
+  document.getElementById('eqTitle').textContent=MODULES[mod].title;
+  document.getElementById('eqText').textContent=MODULES[mod].eq;
+  buildControls(mod);
+}
+function activateTab(i){
+  document.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  const isTheory=(i===4);
+  theoryPane.classList.toggle('visible',isTheory);
+  canvas.style.display=isTheory?'none':'block';
+  plotlyDiv.style.display='none';
+}
+
+// ─── CONTROLS ──────────────────────────────────────────────────
+function clearControls(){document.getElementById('controls').innerHTML='';}
+function addSlider(label,key,min,max,step,fmt){
+  const c=document.getElementById('controls');
+  const g=document.createElement('div');g.className='ctrl-group';
+  const ll=document.createElement('span');ll.className='ctrl-label';ll.textContent=label;
+  const sl=document.createElement('input');sl.type='range';sl.min=min;sl.max=max;sl.step=step;sl.value=state[key];
+  const vl=document.createElement('span');vl.className='ctrl-val';vl.textContent=fmt(state[key]);
+  sl.oninput=()=>{state[key]=parseFloat(sl.value);vl.textContent=fmt(state[key]);render();};
+  g.append(ll,sl,vl);c.appendChild(g);
+}
+function addSelect(label,key,options){
+  const c=document.getElementById('controls');
+  const g=document.createElement('div');g.className='ctrl-group';
+  const ll=document.createElement('span');ll.className='ctrl-label';ll.textContent=label;
+  const sel=document.createElement('select');
+  options.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;if(String(o)===String(state[key]))opt.selected=true;sel.appendChild(opt);});
+  sel.onchange=()=>{state[key]=sel.value;render();};
+  g.append(ll,sel);c.appendChild(g);
+}
+function addAnimBtn(text,color,fn){
+  const c=document.getElementById('controls');
+  const b=document.createElement('button');
+  b.className='anim-btn';b.id='animBtn';b.style.background=color;b.textContent=text;
+  b.onclick=()=>{if(state.animRunning){state.animRunning=false;b.textContent=text;return;}fn(b,text);};
+  c.appendChild(b);
+}
+
+function buildControls(mod){
+  clearControls();
+  switch(mod){
+    case'cnn1':
+      addSlider('Kernel K','K',3,11,2,v=>`${Math.round(v)}`);
+      addSlider('Stride S','S',1,4,1,v=>`${Math.round(v)}`);
+      addSlider('Padding P','P',0,5,1,v=>`${Math.round(v)}`);
+      addSlider('Layers','layers',1,5,1,v=>`${Math.round(v)}`);
+      addSelect('Filter','filterType',Object.keys(KERNELS));
+      addAnimBtn('▶ Animate Conv','#1a7a42',animateCNN1);
+      break;
+    case'cnn2':
+      addSlider('Depth','depth',1,8,1,v=>`${Math.round(v)}`);
+      addSlider('Channels','channels',16,128,16,v=>`${Math.round(v)}`);
+      addAnimBtn('▶ Animate Residual','#1a5a32',animateCNN2);
+      break;
+    case'rnn':
+      addSlider('Seq len T','seqLen',5,60,1,v=>`${Math.round(v)}`);
+      addSelect('RNN type','rnnType',['Vanilla RNN','LSTM','GRU']);
+      addSlider('||W_h||','wnorm',0.5,1.1,0.01,v=>v.toFixed(2));
+      addAnimBtn('▶ Animate Gradient','#1a3a6a',animateRNN);
+      break;
+    case'trans':
+      addSlider('Temp τ','temp',0.1,3.0,0.05,v=>v.toFixed(2));
+      addSlider('dₖ','dk',8,128,8,v=>`${Math.round(v)}`);
+      addSelect('Heads','nHeads',['1','2','4','8']);
+      addSelect('Patch px','patchSize',['8','16','32']);
+      addAnimBtn('▶ Animate Attention','#5a1a9a',animateTrans);
+      break;
+    case'vae':
+      addSlider('β (KL)','beta',0,5,0.1,v=>v.toFixed(1));
+      addSlider('μ','mu',-3,3,0.05,v=>v.toFixed(2));
+      addSlider('σ','sigma',0.1,3,0.05,v=>v.toFixed(2));
+      addSelect('Latent dim','latDim',['2','4','8','16','32']);
+      addAnimBtn('▶ Animate ELBO','#7a1a5a',animateVAE);
+      break;
+    case'gan':
+      addSlider('Train step','ganStep',1,50,1,v=>`${Math.round(v)}`);
+      addSlider('Overlap','overlap',0,1,0.02,v=>v.toFixed(2));
+      addSelect('Mode','ganMode',['GAN (JS)','WGAN','Normalizing Flow']);
+      addSlider('Flow layers','flowSteps',1,8,1,v=>`${Math.round(v)}`);
+      addAnimBtn('▶ Animate GAN','#9a1a1a',animateGAN);
+      break;
+    case'diff':
+      addSlider('Timestep t','timestep',1,parseInt(state.totalT)||1000,1,v=>`${Math.round(v)}`);
+      addSelect('Schedule','schedule',['Linear','Cosine']);
+      addSlider('η (0=DDIM)','eta',0,1,0.02,v=>v.toFixed(2));
+      addSlider('Rev. steps','revSteps',4,50,2,v=>`${Math.round(v)}`);
+      addSelect('Total T','totalT',['100','250','500','1000']);
+      addAnimBtn('▶ Animate Diffusion','#1a6a5a',animateDiff);
+      break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER DISPATCHER
+// ═══════════════════════════════════════════════════════════════
+function render(){
+  if(state.tab===4){renderTheory(state.mod);return;}
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+  plotlyDiv.style.display='none';
+  theoryPane.classList.remove('visible');
+  canvas.style.display='block';
+  switch(state.mod){
+    case'cnn1': renderCNN1();break;
+    case'cnn2': renderCNN2();break;
+    case'rnn':  renderRNN();break;
+    case'trans':renderTrans();break;
+    case'vae':  renderVAE();break;
+    case'gan':  renderGAN();break;
+    case'diff': renderDiff();break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── CNN1 ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderCNN1(){
+  const K=Math.round(state.K),S=Math.round(state.S),P=Math.round(state.P);
+  const nL=Math.round(state.layers),ft=state.filterType;
+  const kernel=getKernel(K,ft);
+  const outH=Math.max(Math.floor((imgH+2*P-K)/S)+1,1);
+  const outW=Math.max(Math.floor((imgW+2*P-K)/S)+1,1);
+  document.getElementById('eqText').textContent=
+    `Y[i,j] = ΣΣ X[i·S+m, j·S+n]·W[m,n]     N_out = ⌊(${imgH}+2·${P}−${K})/${S}⌋+1 = ${outH}     Conv: ${K}²=${K*K} params  |  FC: ${imgH}×${imgW}×1000 = ${(imgH*imgW*1000/1e6).toFixed(1)}M params`;
+  switch(state.tab){
+    case 0: cnn1Tab0(kernel,K,P,S,outH,outW);break;
+    case 1: cnn1Tab1(kernel,K,P,S,outH,outW);break;
+    case 2: cnn1Tab2(K,S,P,outH,outW);break;
+    case 3: cnn1Tab3(K,S,nL);break;
+  }
+}
+function cnn1Tab0(kernel,K,P,S,outH,outW){
+  const margin=40,size=Math.min(W-margin*2,H-margin*2-30);
+  const ix=(W-size)/2,iy=(H-size)/2+10;
+  drawImageGray(grayPixels,imgW,imgH,ix,iy,size,size);
+  strokeRect(ix,iy,size,size,'#555',1);
+  const cx=Math.round(imgW/2),cy=Math.round(imgH/2),half=Math.floor(K/2);
+  const cX=size/imgW,cY=size/imgH;
+  const kx=ix+(cx-half)*cX,ky=iy+(cy-half)*cY,kw=K*cX,kh=K*cY;
+  ctx.save();ctx.fillStyle='rgba(255,102,34,0.10)';ctx.fillRect(kx,ky,kw,kh);ctx.restore();
+  strokeRect(kx,ky,kw,kh,'#ff6622',2.5);
+  for(let m=0;m<K;m++) for(let n=0;n<K;n++){
+    const v=kernel[m*K+n];
+    lbl(v.toFixed(1),kx+(n+0.5)*cX,ky+(m+0.5)*cY,Math.max(7,Math.min(11,52/K)),v>=0?'#ff8844':'#4488ff','center',true);
+  }
+  lbl(`${K}×${K} kernel overlay`,W/2,iy-16,12,'#aac','center',true);
+  lbl(`Output: ${outH}×${outW}  (input: ${imgH}×${imgW})  K=${K} P=${P} S=${S}`,W/2,H-14,10,'#778','center');
+}
+function cnn1Tab1(kernel,K,P,S,outH,outW){
+  const{fm}=conv2D(grayPixels,imgW,imgH,kernel,K,S,P);
+  const margin=50,size=Math.min(W-margin*2,H-margin*2-20);
+  const ix=(W-size)/2,iy=(H-size)/2+8;
+  drawImageColormap(fm,outW,outH,ix,iy,size,size,jetColor);
+  strokeRect(ix,iy,size,size,'#555',1);
+  colorbar(ix+size+12,iy,16,size,jetColor);
+  lbl(`Feature Map — ${state.filterType}`,W/2,iy-16,12,'#aac','center',true);
+  lbl(`Output: ${outH}×${outW}`,W/2,H-14,10,'#778','center');
+}
+function cnn1Tab2(K,S,P,outH,outW){
+  const cx=W/2;
+  let y=55;
+  lbl('Output Size Formula',cx,y,15,'#a0b4ff','center',true);y+=32;
+  lbl('N_out  =  ⌊ (N + 2P − K) / S ⌋  +  1',cx,y,13,'#88aaff','center');y+=26;
+  lbl(`= ⌊ (${imgH} + 2·${P} − ${K}) / ${S} ⌋ + 1`,cx,y,12,'#7799dd','center');y+=22;
+  const inner=imgH+2*P-K;
+  lbl(`= ⌊ ${inner} / ${S} ⌋ + 1 = ${Math.floor(inner/S)} + 1 = ${outH}`,cx,y,14,'#55cc88','center',true);y+=28;
+  hline(cx-200,y,cx+200,y,'#333',1,[5,4]);y+=14;
+  lbl(`Input ${imgH}×${imgW}  →  Output ${outH}×${outW}`,cx,y,12,'#aaa','center');y+=22;
+  hline(cx-200,y,cx+200,y,'#333',1,[5,4]);y+=14;
+  lbl('Parameter Efficiency',cx,y,13,'#ffaa44','center',true);y+=20;
+  const pC=K*K,pFC=imgH*imgW*1000;
+  lbl(`Conv:  K² = ${K}² = ${pC} parameters  (same filter reused at every location)`,cx,y,12,'#cca060','center');y+=18;
+  lbl(`FC:    ${imgH}×${imgW}×1000 = ${(pFC/1e6).toFixed(1)}M parameters  (${Math.round(pFC/pC)}× more)`,cx,y,12,'#cc6060','center');y+=28;
+  lbl('Inductive Biases',cx,y,13,'#aa88ff','center',true);y+=20;
+  ['1. Local connectivity  — neuron sees only K×K pixels, not all',
+   '2. Parameter sharing   — same weights at every spatial location',
+   '3. Translation equivariance  — shift(f(x)) = f(shift(x))'].forEach(t=>{lbl(t,cx,y,11,'#9090b8','center');y+=17;});
+}
+function cnn1Tab3(K,S,nL){
+  const cx=W/2,cy=H/2;
+  const RF=[1];let sa=1;
+  for(let l=0;l<nL;l++){RF.push(RF[RF.length-1]+(K-1)*sa);sa*=S;}
+  const maxRF=RF[RF.length-1],maxR=Math.min(cx,cy)*0.85;
+  lbl(`Receptive Field — ${nL} layers  K=${K}  S=${S}  →  RF=${maxRF}`,cx,24,13,'#aac','center',true);
+  for(let l=nL;l>=0;l--){
+    const r=(RF[l]/maxRF)*maxR,t=l/Math.max(nL,1);
+    const[cr,cg,cb]=coolColor(t);
+    ctx.save();ctx.strokeStyle=`rgb(${cr},${cg},${cb})`;ctx.lineWidth=2.5;
+    ctx.strokeRect(cx-r,cy-r,2*r,2*r);
+    if(l===0||l===nL||l%2===0) lbl(`L${l}: RF=${RF[l]}`,cx+r+4,cy-r,10,`rgb(${cr},${cg},${cb}),'left'`);
+    ctx.restore();
+  }
+  ctx.save();ctx.strokeStyle='#ff4444';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx-9,cy);ctx.lineTo(cx+9,cy);ctx.moveTo(cx,cy-9);ctx.lineTo(cx,cy+9);ctx.stroke();ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── CNN2 ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderCNN2(){
+  switch(state.tab){
+    case 0: cnn2Tab0();break; case 1: cnn2Tab1();break;
+    case 2: cnn2Tab2();break; case 3: cnn2Tab3();break;
+  }
+}
+function cnn2Tab0(){
+  const cx=W/2,bw=260,bh=50,r=9;
+  let y=44;
+  lbl('Residual Block: H(x) = F(x) + x',cx,y,14,'#a0b4ff','center',true);y+=30;
+  lbl('x (input)',cx+bw/2+6,y+10,10,'#888','left');
+  arrow(cx,y,cx,y+25,'#666');y+=25;
+  roundRect(cx-bw/2,y,bw,bh,'#1a2a4a','#4488dd',2,r);
+  lbl('Conv 3×3 + BN + ReLU',cx,y+bh/2,11,'#88bbff','center',true);y+=bh;
+  arrow(cx,y,cx,y+20,'#666');y+=20;
+  roundRect(cx-bw/2,y,bw,bh,'#1a2a4a','#4488dd',2,r);
+  lbl('Conv 3×3 + BN    →    F(x)',cx,y+bh/2,11,'#88bbff','center',true);y+=bh;
+  // add circle
+  const addX=cx,addY=y+28;
+  circle(addX,addY,18,'#2a1a0a','#ff8833',2);
+  lbl('+',addX,addY,16,'#ff8833','center',true);
+  // skip arc
+  const topY=y-bh-20+bh/2,arcX=cx-bw/2-52;
+  ctx.save();ctx.strokeStyle='#ee6622';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(cx-bw/2,topY);
+  ctx.bezierCurveTo(arcX,topY,arcX,addY,addX-19,addY);
+  ctx.stroke();ctx.restore();
+  lbl('skip x',arcX-3,(topY+addY)/2,10,'#ee6622','right');
+  arrow(cx,addY+19,cx,addY+38,'#666');
+  roundRect(cx-bw/2+40,addY+38,bw-80,40,'#0a2a0a','#33aa55',2,r);
+  lbl('ReLU',cx,addY+58,11,'#55cc88','center',true);
+  arrow(cx,addY+78,cx,addY+100,'#666');
+  lbl('H(x) = F(x) + x',cx,addY+114,12,'#55cc88','center',true);
+  lbl('If F(x)→0: H(x)=x  (identity learned effortlessly)',cx,addY+132,10,'#aa8855','center',false,true);
+  lbl('∂L/∂x = ∂L/∂H·(1 + ∂F/∂x)  → "+1" guarantees non-zero gradient',cx,addY+150,10,'#55aa77','center',false,true);
+}
+function cnn2Tab1(){
+  const nD=Math.round(state.depth),T=nD+2,Wn=state.wnorm,tp=0.65;
+  const steps=Array.from({length:T+1},(_,i)=>i);
+  const gRNN=steps.map(s=>(Wn*tp)**s);
+  const gLSTM=steps.map(s=>0.92**s);
+  const gRes=[1];for(let s=1;s<=T;s++) gRes.push(gRes[s-1]*(1+(Wn*tp-1)*0.3));
+  const mx=55,my=35,mw=W-mx-30,mh=H-my-60;
+  drawAxes(mx,my,mw,mh,{xLabel:'Layer backward',yLabel:'Gradient (log)',
+    title:`Gradient Flow — ${T} layers  ||Wh||=${Wn.toFixed(2)}`,
+    xMin:0,xMax:T,yMin:0,yMax:1,xTicks:T,yTicks:5});
+  const LM=logMap10(mx,my,mw,mh,T);
+  const bw=Math.max(1,(mw/T)*0.65);
+  gRNN.forEach((v,i)=>{const{px,py}=LM(i,v);const{py:pb}=LM(i,1e-8);
+    ctx.save();ctx.globalAlpha=0.65;ctx.fillStyle='#ee4444';ctx.fillRect(px-bw/2,py,bw,Math.max(pb-py,1));ctx.restore();});
+  plotLine(LM,steps,gRNN,'#ee4444',2);
+  gLSTM.forEach((v,i)=>{const{px,py}=LM(i,v);const{py:pb}=LM(i,1e-8);
+    ctx.save();ctx.globalAlpha=0.55;ctx.fillStyle='#ffaa22';ctx.fillRect(px-bw/2,py,bw,Math.max(pb-py,1));ctx.restore();});
+  plotLine(LM,steps,gLSTM,'#ffaa22',2);
+  plotFill(LM,steps,gRes.map(v=>Math.max(v,1e-9)),'#33cc77');
+  plotLine(LM,steps,gRes.map(v=>Math.max(v,1e-9)),'#33cc77',2.5);
+  const{py:thy}=LM(0,0.01);hline(mx,thy,mx+mw,thy,'#555',1,[5,3]);lbl('0.01',mx+mw+3,thy,9,'#666','left');
+  for(let e=-8;e<=0;e+=2){const{py:yl}=LM(0,10**e);if(yl>my&&yl<my+mh)lbl(`1e${e}`,mx-4,yl,8,'#666','right');}
+  const lx=mx+mw-170,ly=my+10;
+  [['#ee4444','Plain CNN'],['#ffaa22','LSTM'],['#33cc77','ResNet']].forEach(([c,n],i)=>{hline(lx,ly+i*18,lx+24,ly+i*18,c,2.5);lbl(n,lx+28,ly+i*18,10,c,'left');});
+}
+function cnn2Tab2(){
+  const nD=Math.round(state.depth),rng=mulberry32(42),N=300;
+  const theta=linspace(-3,3,N);
+  let acc=0;const noise=theta.map(()=>{acc+=0.4*nD*randn(rng)/Math.sqrt(N);return acc;});
+  const minV=Math.min(...theta.map((t,i)=>t*t+0.5*Math.sin(3*t)*Math.cos(t*1.5)+noise[i]));
+  const lP=theta.map((t,i)=>Math.max(t*t+0.5*Math.sin(3*t)*Math.cos(t*1.5)+noise[i]-minV,0));
+  const lR=theta.map(t=>Math.max(t*t+0.05*Math.sin(3*t),0));
+  const yMax=Math.max(...lP,...lR)+0.5;
+  const mx=55,my=35,mw=W-mx-30,mh=H-my-55;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'θ (parameter)',yLabel:'Loss',
+    title:'Loss Landscape — skip connections smooth the surface',xMin:-3,xMax:3,yMin:0,yMax:yMax,xTicks:6,yTicks:5});
+  plotFill(map,theta,lP,'#ee4444',0.22);plotLine(map,theta,lP,'#cc3333',2);
+  plotFill(map,theta,lR,'#33cc77',0.22);plotLine(map,theta,lR,'#22aa55',2.5,true);
+  const lx=mx+20,ly=my+12;
+  hline(lx,ly,lx+24,ly,'#cc3333',2);lbl(`Plain CNN (${nD} layers)`,lx+28,ly,10,'#cc6655','left');
+  hline(lx,ly+18,lx+24,ly+18,'#22aa55',2,true);lbl('ResNet — smooth',lx+28,ly+18,10,'#33cc77','left');
+}
+function cnn2Tab3(){
+  const models=[{n:'LeNet-5',p:0.06,e:NaN},{n:'AlexNet',p:61,e:15.3},{n:'VGG-16',p:138,e:7.3},
+    {n:'ResNet-18',p:11,e:10.9},{n:'ResNet-50',p:25,e:7.8},{n:'DenseNet',p:8,e:5.7},{n:'MobileNet',p:4.2,e:10.5}];
+  const cols=['#888','#e07030','#e04040','#3a80e8','#1a55c8','#30b860','#9040c0'];
+  const pMax=138,marg=70,bx=marg,by=44,bw=W-marg*2,bh=H-by-60;
+  lbl('Architecture Comparison  (bubble ∝ params)',W/2,20,12,'#aac','center',true);
+  models.forEach((m,i)=>{
+    if(isNaN(m.e))return;
+    const xf=0.08+0.82*Math.pow(m.p/pMax,0.4),yf=0.05+0.85*(1-m.e/20);
+    const r=12+50*Math.pow(m.p/pMax,0.4);
+    const px=bx+bw*xf,py=by+bh*(1-yf);
+    ctx.save();ctx.globalAlpha=0.78;circle(px,py,r,cols[i],'none');ctx.restore();
+    lbl(m.n,px,py,9,'#fff','center',true);
+    lbl(`${m.p}M | ${m.e}%`,px,py+r+10,8,'#aaa','center');
+  });
+  lbl('← Fewer params      More params →',W/2,H-18,10,'#555','center');
+  const nD=Math.round(state.depth),ch=Math.round(state.channels);
+  lbl(`Current config: depth=${nD} blocks  channels=${ch}  block_params≈${((3*3*ch*ch*2*nD)/1e6).toFixed(1)}M`,W/2,H-36,10,'#779','center');
+}
+// ═══════════════════════════════════════════════════════════════
+// ── RNN ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderRNN(){
+  switch(state.tab){
+    case 0:rnnTab0();break; case 1:rnnTab1();break;
+    case 2:rnnTab2();break; case 3:rnnTab3();break;
+  }
+}
+function rnnTab0(){
+  const T=Math.round(state.seqLen),Wn=state.wnorm,rt=state.rnnType;
+  const steps=Array.from({length:T+1},(_,i)=>i);
+  let gData,color;
+  if(rt==='Vanilla RNN'){gData=steps.map(s=>(Wn*0.65)**s);color='#e04444';}
+  else if(rt==='LSTM')  {gData=steps.map(s=>0.92**s);      color='#4488ee';}
+  else                   {gData=steps.map(s=>(0.5+0.5*0.92)**s);color='#33bb66';}
+  document.getElementById('eqText').textContent=
+    rt==='Vanilla RNN'?'h_t=tanh(W_h·h_{t-1}+W_x·x_t)     ∂L/∂h_0 ∝ (W_h·tanh\')^T  →  vanishes if ||W_h||<1':
+    rt==='LSTM'?'f_t=σ(W_f[h_{t-1};x_t])   C_t=f_t⊙C_{t-1}+i_t⊙C̃_t   ∂C_t/∂C_{t-1}=f_t   (additive highway, no matrix)':
+    'z_t=σ(W_z[h_{t-1};x_t])   h_t=(1−z_t)⊙h_{t-1}+z_t⊙h̃_t   (linear interpolation, not multiply)';
+  const mx=55,my=35,mw=W-mx-30,mh=H-my-65;
+  drawAxes(mx,my,mw,mh,{xLabel:'Timestep backward (T→0)',yLabel:'Gradient magnitude',
+    title:`${rt} — Gradient through ${T} steps  ||W_h||=${Wn.toFixed(2)}`,
+    xMin:0,xMax:T,yMin:0,yMax:1,xTicks:Math.min(T,10),yTicks:5});
+  const LM=logMap10(mx,my,mw,mh,T);
+  const bw=Math.max(1,(mw/T)*0.65);
+  gData.forEach((v,i)=>{
+    const{px,py}=LM(i,v);const{py:pb}=LM(i,1e-10);
+    ctx.save();ctx.globalAlpha=0.72;ctx.fillStyle=color;ctx.fillRect(px-bw/2,py,bw,Math.max(pb-py,1));ctx.restore();
+  });
+  plotLine(LM,steps,gData,color,1.8);
+  const{py:thy}=LM(0,0.01);hline(mx,thy,mx+mw,thy,'#555',1,[5,3]);lbl('0.01 threshold',mx+mw+3,thy,9,'#666','left');
+  for(let e=-8;e<=0;e+=2){const{py:yl}=LM(0,10**e);if(yl>my&&yl<my+mh)lbl(`1e${e}`,mx-4,yl,8,'#666','right');}
+}
+function rnnTab1(){
+  const T=Math.round(state.seqLen),rng=mulberry32(7);
+  const ta=Array.from({length:T},(_,i)=>i+1);
+  const ft=ta.map(t=>Math.min(Math.max(0.85+0.1*Math.sin(t*0.4)+0.05*randn(rng),0.02),0.98));
+  const it=ta.map(t=>Math.min(Math.max(0.3+0.2*Math.sin(t*0.6+1)+0.05*randn(rng),0.02),0.98));
+  const ot=ta.map(t=>Math.min(Math.max(0.5+0.25*Math.cos(t*0.5+0.5)+0.05*randn(rng),0.05),0.95));
+  const resetT=Math.round(T*0.35),writeT=Math.round(T*0.2);
+  ft[resetT]=0.1;it[writeT]=0.88;
+  lbl('LSTM Gate Activations  (simulated)',W/2,16,12,'#aac','center',true);
+  const gates=[ft,it,ot],names=['Forget  f_t','Input   i_t','Output  o_t'];
+  const cellH=(H-55)/3,cellW=W-80,px0=70;
+  gates.forEach((g,gi)=>{
+    const py0=28+gi*cellH,cS=cellW/T;
+    g.forEach((v,ti)=>{const[r,gr,b]=hotColor(v);ctx.fillStyle=`rgb(${r},${gr},${b})`;ctx.fillRect(px0+ti*cS,py0,cS,cellH-8);});
+    strokeRect(px0,py0,cellW,cellH-8,'#555',1);
+    lbl(names[gi],px0-6,py0+(cellH-8)/2,10,'#aaa','right',true);
+    g.forEach((v,ti)=>{if(ti%Math.max(1,Math.floor(T/10))===0&&cS>16){
+      lbl(v.toFixed(2),px0+(ti+0.5)*cS,py0+(cellH-8)/2,8,v>0.5?'#000':'#eee','center');}});
+  });
+  const rx=px0+resetT*(cellW/T),wx=px0+writeT*(cellW/T);
+  hline(rx,28,rx,28+3*(cellH-8),'#ffffff',1.5,[3,3]);lbl('reset',rx+3,28+10,8,'#fff','left',true);
+  hline(wx,28,wx,28+3*(cellH-8),'#00eeff',1.5,[3,3]);lbl('write',wx+3,28+(cellH-8)+10,8,'#0ef','left',true);
+  lbl('Timestep t',W/2,H-12,10,'#778','center');
+}
+function rnnTab2(){
+  const T=Math.round(state.seqLen),rng1=mulberry32(12),rng2=mulberry32(99);
+  const ta=Array.from({length:T},(_,i)=>i+1);
+  let acc=0;const Ct=ta.map(()=>{acc+=0.1*randn(rng1);return acc;});
+  const ctMax=Math.max(...Ct.map(Math.abs))||1,CtN=Ct.map(v=>v/ctMax);
+  const ht=CtN.map(v=>0.7*Math.tanh(v)+0.3*randn(rng2)/3);
+  const hRNN=[];let hacc=0;for(let i=0;i<T;i++){hacc+=0.25*randn(rng1);hRNN.push(hacc);}
+  const hMax=Math.max(...hRNN.map(Math.abs))||1,hRNNN=hRNN.map(v=>v/hMax);
+  const mx=55,my=35,mw=W-mx-30,mh=H-my-65;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'Timestep t',yLabel:'State value',
+    title:'Cell State Highway  vs  Vanilla RNN drift',xMin:1,xMax:T,yMin:-1.4,yMax:1.4,xTicks:Math.min(T,10),yTicks:6});
+  plotFill(map,ta,hRNNN,'#ee4444',0.18);plotLine(map,ta,hRNNN,'#cc3333',2);
+  plotLine(map,ta,CtN,'#4488ee',2.5);
+  plotLine(map,ta,ht,'#33aa55',1.8,true);
+  const lx=mx+mw-200,ly=my+10;
+  [['#cc3333','Vanilla RNN h_t'],['#4488ee','LSTM C_t (highway)'],['#33aa55','LSTM h_t (gated)']].forEach(([c,n],i)=>{hline(lx,ly+i*18,lx+24,ly+i*18,c,2,i===1?[]:[5,4]);lbl(n,lx+28,ly+i*18,10,c,'left');});
+  lbl('∂C_t/∂C_{t-1} = f_t  (element-wise only, no W matrix, no tanh")',mx+20,my+mh+42,10,'#6688cc','left');
+}
+function rnnTab3(){
+  const eng=['I','love','deep','learning','models'],fre=['Je','aime','l\'IA','profonde','vraiment'],n=5;
+  const A=[[0.85,0.05,0.05,0.03,0.02],[0.04,0.88,0.05,0.02,0.01],[0.03,0.05,0.80,0.10,0.02],
+            [0.02,0.04,0.08,0.83,0.03],[0.02,0.03,0.05,0.05,0.85]];
+  const marg=60,cS=Math.min((W-marg*2)/n,(H-marg*2-30)/n);
+  const gx=marg,gy=50,gw=n*cS,gh=n*cS;
+  lbl('Bahdanau Attention Alignment  α_{t,s} = softmax(e_{t,s})',W/2,22,13,'#aac','center',true);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const v=A[i][j];const[r,gr,b]=hotColor(v);
+    ctx.fillStyle=`rgb(${r},${gr},${b})`;ctx.fillRect(gx+j*cS,gy+i*cS,cS,cS);
+    lbl(v.toFixed(2),gx+(j+0.5)*cS,gy+(i+0.5)*cS,Math.min(11,cS*0.24),v>0.5?'#1a1a9a':'#eeee88','center',v>0.5);
+  }
+  strokeRect(gx,gy,gw,gh,'#666',1);
+  eng.forEach((w,j)=>lbl(w,gx+(j+0.5)*cS,gy+gh+15,11,'#aaa','center'));
+  fre.forEach((w,i)=>lbl(w,gx-8,gy+(i+0.5)*cS,11,'#aaa','right'));
+  lbl('Source tokens',gx+gw/2,gy+gh+30,10,'#778','center');
+  ctx.save();ctx.translate(gx-36,gy+gh/2);ctx.rotate(-Math.PI/2);lbl('Target tokens',0,0,10,'#778','center');ctx.restore();
+  colorbar(gx+gw+20,gy,14,gh,hotColor);lbl('0',gx+gw+38,gy+gh,9,'#888','left');lbl('1',gx+gw+38,gy,9,'#888','left');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── TRANSFORMER ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderTrans(){
+  switch(state.tab){
+    case 0:transTab0();break; case 1:transTab1();break;
+    case 2:transTab2();break; case 3:transTab3();break;
+  }
+}
+function transTab0(){
+  const pSz=parseInt(state.patchSize),tau=state.temp,dk=Math.round(state.dk);
+  const nPh=Math.floor(imgH/pSz),nPw=Math.floor(imgW/pSz),nP=nPh*nPw;
+  const patches=[];
+  for(let r=0;r<nPh;r++) for(let c=0;c<nPw;c++){
+    let s=0;for(let m=0;m<pSz;m++) for(let n=0;n<pSz;n++) s+=grayPixels[(r*pSz+m)*imgW+c*pSz+n];
+    patches.push(s/(pSz*pSz));
+  }
+  const qIdx=Math.floor(nP/2);
+  const attn=patches.map(p=>{const d=patches[qIdx]-p;return Math.exp(-d*d*dk/(tau*tau*2));});
+  const attnSum=attn.reduce((a,b)=>a+b,0);
+  const attnN=attn.map(v=>v/attnSum);
+  const margin=40,size=Math.min(W-margin*2,H-margin*2-30);
+  const ix=(W-size)/2,iy=(H-size)/2+10;
+  drawImageGray(grayPixels,imgW,imgH,ix,iy,size,size);
+  const pH=size/nPh,pW=size/nPw;
+  for(let r=0;r<nPh;r++) for(let c=0;c<nPw;c++){
+    const i=r*nPw+c,w=attnN[i]*nP;
+    const col=w>0.8?'#ff6622':w>0.3?'#ffaa22':'#4488aa';
+    strokeRect(ix+c*pW,iy+r*pH,pW,pH,col,w>0.8?3:w>0.3?2:0.8);
+  }
+  const qr=Math.floor(qIdx/nPw),qc=qIdx%nPw;
+  ctx.save();ctx.fillStyle='rgba(255,255,0,0.18)';ctx.fillRect(ix+qc*pW,iy+qr*pH,pW,pH);ctx.restore();
+  strokeRect(ix+qc*pW,iy+qr*pH,pW,pH,'#ffff00',3);
+  lbl('Q',ix+qc*pW+pW/2,iy+qr*pH+pH/2,12,'#ffff00','center',true);
+  lbl(`Self-attention  τ=${tau.toFixed(2)}  dₖ=${dk}  patch=${pSz}px  → ${nP} tokens`,W/2,iy-14,11,'#aac','center',true);
+  lbl('Orange=high attention  Yellow=query patch  Blue=low attention',W/2,H-14,10,'#778','center');
+}
+function transTab1(){
+  const tau=state.temp,dk=Math.round(state.dk),n=8;
+  const rng=mulberry32(5);
+  const X=[],Wq=[],Wk2=[];
+  for(let i=0;i<n*dk;i++) X.push(randn(rng)/Math.sqrt(dk));
+  for(let i=0;i<dk*dk;i++){Wq.push(randn(rng)/Math.sqrt(dk));Wk2.push(randn(rng)/Math.sqrt(dk));}
+  const Q=new Float32Array(n*dk),K=new Float32Array(n*dk);
+  for(let i=0;i<n;i++) for(let j=0;j<dk;j++){
+    let sq=0,sk=0;for(let l=0;l<dk;l++){sq+=X[i*dk+l]*Wq[l*dk+j];sk+=X[i*dk+l]*Wk2[l*dk+j];}
+    Q[i*dk+j]=sq;K[i*dk+j]=sk;
+  }
+  const E=new Float32Array(n*n);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){let s=0;for(let l=0;l<dk;l++)s+=Q[i*dk+l]*K[j*dk+l];E[i*n+j]=s/Math.sqrt(dk);}
+  const Ab=softmaxRows(E,n);
+  const Ea=new Float32Array(E.length);for(let i=0;i<E.length;i++) Ea[i]=E[i]/tau;
+  const Aa=softmaxRows(Ea,n);
+  const gapX=18,cw=(W-56-gapX)/2,ch=Math.min(cw,H-78);
+  const x1=28,x2=x1+cw+gapX,gy=(H-ch)/2;
+  const cS1=cw/n,cS2=cw/n;
+  lbl('τ=1.0  (standard)',x1+cw/2,gy-18,12,'#aac','center',true);
+  lbl(`τ=${tau.toFixed(2)}  (current)`,x2+cw/2,gy-18,12,'#aac','center',true);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const v1=Ab[i*n+j],v2=Aa[i*n+j];
+    const[r1,g1,b1]=hotColor(v1);ctx.fillStyle=`rgb(${r1},${g1},${b1})`;ctx.fillRect(x1+j*cS1,gy+i*cS1,cS1,cS1);
+    const[r2,g2,b2]=hotColor(v2);ctx.fillStyle=`rgb(${r2},${g2},${b2})`;ctx.fillRect(x2+j*cS2,gy+i*cS2,cS2,cS2);
+    if(cS1>20){lbl(v1.toFixed(2),x1+(j+0.5)*cS1,gy+(i+0.5)*cS1,8,v1>0.4?'#000':'#eee','center');}
+    if(cS2>20){lbl(v2.toFixed(2),x2+(j+0.5)*cS2,gy+(i+0.5)*cS2,8,v2>0.4?'#000':'#eee','center');}
+  }
+  strokeRect(x1,gy,cw,ch,'#666',1);strokeRect(x2,gy,cw,ch,'#666',1);
+  hline(x1+cw+gapX/2,gy,x1+cw+gapX/2,gy+ch,'#555',1);
+  lbl('Lower τ = sharper attention  |  dₖ scaling prevents softmax saturation',W/2,H-14,10,'#778','center');
+}
+function transTab2(){
+  const dk=Math.max(Math.round(state.dk),16),nPos=64;
+  const flat=new Float32Array(nPos*dk);
+  for(let pos=0;pos<nPos;pos++) for(let i=0;i<dk;i++)
+    flat[pos*dk+i]=i%2===0?Math.sin(pos/Math.pow(10000,i/dk)):Math.cos(pos/Math.pow(10000,(i-1)/dk));
+  const mx=60,my=30,mw=W-mx-40,mh=H-my-55;
+  drawImageColormap(flat,dk,nPos,mx,my,mw,mh,coolColor);
+  strokeRect(mx,my,mw,mh,'#666',1);
+  lbl('Positional Encoding  PE(pos,2i)=sin(pos/10000^{2i/d})',W/2,my-14,12,'#aac','center',true);
+  lbl('Embedding dimension i',mx+mw/2,my+mh+20,10,'#778','center');
+  ctx.save();ctx.translate(mx-28,my+mh/2);ctx.rotate(-Math.PI/2);lbl('Position index',0,0,10,'#778','center');ctx.restore();
+  lbl(`dₖ=${dk}  nPos=${nPos}  — each row is added to the token embedding`,W/2,H-14,10,'#779','center');
+}
+function transTab3(){
+  const nH=parseInt(state.nHeads),tau=state.temp,dk=Math.round(state.dk),n=8;
+  const ncols=Math.min(nH,4),nrows=Math.ceil(nH/ncols);
+  const cS=Math.min((W-20)/ncols,(H-46)/nrows);
+  const startX=(W-ncols*cS)/2,startY=32;
+  lbl(`Multi-Head Attention — ${nH} heads  τ=${tau.toFixed(2)}  dₖ=${dk}`,W/2,18,13,'#aac','center',true);
+  for(let h=0;h<nH;h++){
+    const rng=mulberry32(h*17+1);
+    const X=[],Wq=[],Wk2=[];
+    for(let i=0;i<n*dk;i++) X.push(randn(rng)/Math.sqrt(dk));
+    for(let i=0;i<dk*dk;i++){Wq.push(randn(rng)/Math.sqrt(dk));Wk2.push(randn(rng)/Math.sqrt(dk));}
+    const Q=new Float32Array(n*dk),K=new Float32Array(n*dk);
+    for(let i=0;i<n;i++) for(let j=0;j<dk;j++){
+      let sq=0,sk=0;for(let l=0;l<dk;l++){sq+=X[i*dk+l]*Wq[l*dk+j];sk+=X[i*dk+l]*Wk2[l*dk+j];}
+      Q[i*dk+j]=sq;K[i*dk+j]=sk;
+    }
+    const E=new Float32Array(n*n);
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){let s=0;for(let l=0;l<dk;l++)s+=Q[i*dk+l]*K[j*dk+l];E[i*n+j]=s/Math.sqrt(dk)/tau;}
+    const A=softmaxRows(E,n);
+    const rr=Math.floor(h/ncols),cc=h%ncols;
+    const hx=startX+cc*cS+4,hy=startY+rr*cS+4,cs=(cS-8)/n;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+      const[r,g,b]=hotColor(A[i*n+j]);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(hx+j*cs,hy+i*cs,cs,cs);
+    }
+    strokeRect(hx,hy,cs*n,cs*n,'#444',1);
+    lbl(`H${h+1}`,hx+cs*n/2,hy+cs*n/2,Math.min(14,cs*1.1),'rgba(255,255,255,0.65)','center',true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── VAE ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderVAE(){
+  const mu=state.mu,sigma=Math.max(state.sigma,0.05),beta=state.beta;
+  const kl=0.5*(mu*mu+sigma*sigma-Math.log(sigma*sigma+1e-8)-1);
+  document.getElementById('eqText').textContent=
+    `ELBO = E[log p(x|z)] − β·KL(q||p)     KL = ½Σ(μ²+σ²−log σ²−1)     KL=${kl.toFixed(3)}  (μ=${mu.toFixed(1)}  σ=${sigma.toFixed(2)}  β=${beta.toFixed(1)})`;
+  switch(state.tab){
+    case 0:vaeTab0(mu,sigma,beta,kl);break; case 1:vaeTab1(mu,sigma,kl);break;
+    case 2:vaeTab2(mu,sigma);break;         case 3:vaeTab3(mu,sigma,beta,kl);break;
+  }
+}
+function vaeTab0(mu,sigma,beta,kl){
+  const z=linspace(-5,5,400),prior=z.map(x=>normpdf(x,0,1)),post=z.map(x=>normpdf(x,mu,sigma));
+  const overlap=z.map((x,i)=>Math.min(prior[i],post[i]));
+  const yMax=Math.max(...prior,...post)*1.15;
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-70;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'z',yLabel:'Density',
+    title:`Prior N(0,1) vs Posterior N(${mu.toFixed(1)}, ${sigma.toFixed(2)}²)   KL=${kl.toFixed(3)} nats`,
+    xMin:-5,xMax:5,yMin:0,yMax:yMax,xTicks:10,yTicks:5});
+  plotFill(map,z,prior,'#4488ee',0.28);plotLine(map,z,prior,'#4488ee',2.5);
+  plotFill(map,z,post,'#ee4444',0.28);plotLine(map,z,post,'#ee4444',2.5);
+  plotFill(map,z,overlap,'#44cc77',0.5);
+  const{px:p0}=map(0,0);hline(p0,my,p0,my+mh,'#4488ee',1.2,[4,3]);lbl('prior',p0+2,my+12,9,'#4488ee','left');
+  const{px:pm}=map(mu,0);hline(pm,my,pm,my+mh,'#ee4444',1.2,[4,3]);lbl(`μ=${mu.toFixed(1)}`,pm+2,my+28,9,'#ee4444','left');
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','Prior p(z)=N(0,1)'],['#ee4444',`Posterior q(z|x)=N(${mu.toFixed(1)},${sigma.toFixed(2)}²)`],['#44cc77','Overlap']].forEach(([c,n],i)=>{
+    ctx.save();ctx.fillStyle=c;ctx.globalAlpha=0.65;ctx.fillRect(lx,ly+i*18-6,18,11);ctx.restore();lbl(n,lx+22,ly+i*18,10,c,'left');
+  });
+  lbl(`β·KL penalty = ${(beta*kl).toFixed(3)} nats  (β=${beta.toFixed(1)})`,W/2,H-14,10,'#aa7766','center');
+}
+function vaeTab1(mu,sigma,kl){
+  canvas.style.display='none';plotlyDiv.style.display='block';
+  const n=50,mu_v=linspace(-3,3,n),sig_v=linspace(0.1,3,n);
+  const z_data=[];
+  for(let i=0;i<n;i++){const row=[];for(let j=0;j<n;j++){const m=mu_v[j],s=sig_v[i];row.push(0.5*(m*m+s*s-Math.log(s*s)-1));}z_data.push(row);}
+  Plotly.react(plotlyDiv,[
+    {type:'surface',x:mu_v,y:sig_v,z:z_data,colorscale:'Jet',opacity:0.85,showscale:true},
+    {type:'scatter3d',mode:'markers+text',x:[mu],y:[sigma],z:[kl+0.1],
+     text:[`(${mu.toFixed(1)},${sigma.toFixed(2)})\nKL=${kl.toFixed(3)}`],
+     textfont:{color:'red',size:11},marker:{color:'red',size:8}}
+  ],{paper_bgcolor:'#0f1117',plot_bgcolor:'#0f1117',font:{color:'#ccc'},
+    margin:{l:0,r:0,t:30,b:0},
+    scene:{xaxis:{title:'μ',color:'#aaa',gridcolor:'#333'},
+           yaxis:{title:'σ',color:'#aaa',gridcolor:'#333'},
+           zaxis:{title:'KL',color:'#aaa',gridcolor:'#333'},bgcolor:'#0f1117'},
+    title:{text:'KL(q||p) = ½(μ²+σ²−log σ²−1)  surface',font:{color:'#aac',size:13}}
+  },{responsive:true,displayModeBar:false});
+}
+function vaeTab2(mu,sigma){
+  const rng=mulberry32(99),n=300;
+  const eps=[],zSamp=[];
+  for(let i=0;i<n;i++){const e=randn(rng);eps.push(e);zSamp.push(mu+sigma*e);}
+  const allX=[...eps,...zSamp];
+  const xMin=Math.min(...allX)-0.5,xMax=Math.max(...allX)+0.5;
+  const mx=55,my=50,mw=W-mx-30,mh=(H-my-70)/2;
+  const map1=drawAxes(mx,my,mw,mh,{title:'ε ~ N(0,1)  —  fixed noise source',xLabel:'',yLabel:'',xMin,xMax,yMin:0,yMax:1,xTicks:8,yTicks:0});
+  eps.forEach(e=>{const{px}=map1(e,0);circle(px,my+mh/2,3,'rgba(100,120,220,0.35)','none');});
+  const zz=linspace(xMin,xMax,200);
+  plotFill(map1,zz,zz.map(x=>normpdf(x,0,1)*mh*0.88),'#6688dd',0.28);
+  plotLine(map1,zz,zz.map(x=>normpdf(x,0,1)*mh*0.88),'#6688dd',2);
+  const my2=my+mh+40;
+  const map2=drawAxes(mx,my2,mw,mh,{title:`z = μ + σ·ε  →  N(${mu.toFixed(1)}, ${sigma.toFixed(2)}²)`,xLabel:'Value',yLabel:'',xMin,xMax,yMin:0,yMax:1,xTicks:8,yTicks:0});
+  zSamp.forEach(z=>{const{px}=map2(z,0);circle(px,my2+mh/2,3,'rgba(220,80,80,0.35)','none');});
+  plotFill(map2,zz,zz.map(x=>normpdf(x,mu,sigma)*mh*0.88),'#dd4444',0.28);
+  plotLine(map2,zz,zz.map(x=>normpdf(x,mu,sigma)*mh*0.88),'#dd4444',2);
+  for(let i=0;i<n;i+=20){const{px:px1}=map1(eps[i],0);const{px:px2}=map2(zSamp[i],0);hline(px1,my+mh,px2,my2,'rgba(150,150,150,0.22)',1);}
+  lbl('∂z/∂μ=1   ∂z/∂σ=ε   →   backpropagation through sampling now works!',W/2,H-14,11,'#55cc88','center',true);
+}
+function vaeTab3(mu,sigma,beta,kl){
+  const beta_v=linspace(0.01,5,200);
+  const klC=beta_v.map(b=>kl/(b+0.3));
+  const recon=klC.map(k=>-(1.5+2*(1-k/Math.max(...klC))));
+  const elbo=recon.map((r,i)=>r-beta_v[i]*klC[i]);
+  const yAll=[...recon,...klC.map(k=>-k),...elbo];
+  const yMin=Math.min(...yAll)-0.2,yMax=Math.max(...yAll)+0.2;
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-65;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'β (KL weight)',yLabel:'Nats',
+    title:'β-VAE Trade-off:  ELBO = Reconstruction − β·KL',
+    xMin:0,xMax:5,yMin,yMax,xTicks:5,yTicks:5});
+  plotFill(map,beta_v,recon,'#4488ee',0.2);plotLine(map,beta_v,recon,'#4488ee',2);
+  plotFill(map,beta_v,klC.map(k=>-k),'#ee4444',0.2);plotLine(map,beta_v,klC.map(k=>-k),'#ee4444',2);
+  plotLine(map,beta_v,elbo,'#33cc77',2.5,true);
+  const{px:bpx}=map(beta,0);hline(bpx,my,bpx,my+mh,'#ffffff',1.5,[4,3]);lbl(`β=${beta.toFixed(1)}`,bpx+3,my+12,9,'#fff','left');
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','Reconstruction E[log p(x|z)]'],['#ee4444','−KL(q||p)'],['#33cc77','ELBO (dashed)']].forEach(([c,n],i)=>{
+    hline(lx,ly+i*18,lx+24,ly+i*18,c,2,i===2?[5,4]:[]);lbl(n,lx+28,ly+i*18,10,c,'left');
+  });
+  lbl('β>1 → disentangled  |  β=1 → standard VAE  |  β<1 → better reconstruction',W/2,H-14,10,'#778','center');
+}
+// ═══════════════════════════════════════════════════════════════
+// ── GAN ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderGAN(){
+  switch(state.tab){
+    case 0:ganTab0();break; case 1:ganTab1();break;
+    case 2:ganTab2();break; case 3:ganTab3();break;
+  }
+}
+function ganTab0(){
+  const step=Math.round(state.ganStep),alpha=Math.min(step/50,1),ov=state.overlap;
+  const mu_real=0,sig_real=0.7,sig_fake=0.8;
+  const mu_fake=(3-3*ov)*(1-alpha)+mu_real*alpha*0.85;
+  const z=linspace(-5,6,400);
+  const p_real=z.map(x=>normpdf(x,mu_real,sig_real));
+  const p_fake=z.map(x=>normpdf(x,mu_fake,sig_fake));
+  const D_star=p_real.map((pr,i)=>pr/(pr+p_fake[i]+1e-8));
+  const yMax=Math.max(...p_real,...p_fake)*1.2;
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-70;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'x',yLabel:'Density / D*(x)',
+    title:`GAN Training — step ${step}/50  (convergence ${Math.round((1-mu_fake/3)*100)}%)`,
+    xMin:-5,xMax:6,yMin:0,yMax:yMax,xTicks:11,yTicks:5});
+  plotFill(map,z,p_real,'#4488ee',0.28);plotLine(map,z,p_real,'#4488ee',2.5);
+  plotFill(map,z,p_fake,'#ee4444',0.28);plotLine(map,z,p_fake,'#ee4444',2.5);
+  plotLine(map,z,D_star.map(d=>d*0.65),'#55cc77',2,true);
+  const{py:eqY}=map(0,0.5*0.65);hline(mx,eqY,mx+mw,eqY,'#555',1,[5,3]);lbl('D*=0.5 equilibrium',mx+mw+3,eqY,8,'#555','left');
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','p_data(x) — real'],['#ee4444',`p_θ(x) — fake (step ${step}/50)`],['#55cc77','D*(x) optimal discriminator']].forEach(([c,n],i)=>{
+    hline(lx,ly+i*18,lx+24,ly+i*18,c,2,i===2?[5,4]:[]);lbl(n,lx+28,ly+i*18,10,c,'left');
+  });
+}
+function ganTab1(){
+  const N=200,sig=0.5;
+  const sep=linspace(0,6,N);
+  const jsd=sep.map(d=>{
+    const z2=linspace(-8,8+d,800),dz=(16+d)/800;
+    const p1=z2.map(x=>normpdf(x,0,sig)),p2=z2.map(x=>normpdf(x,d,sig));
+    const m=p1.map((v,i)=>(v+p2[i])/2);
+    let j=0;
+    p1.forEach((v,i)=>{if(m[i]>1e-10) j+=0.5*v*Math.log(v/m[i]+1e-12)*dz;});
+    p2.forEach((v,i)=>{if(m[i]>1e-10) j+=0.5*v*Math.log(v/m[i]+1e-12)*dz;});
+    return Math.min(j,Math.log(2));
+  });
+  const w1n=sep.map(d=>d/6*Math.log(2));
+  const step=Math.round(state.ganStep),alpha=Math.min(step/50,1),ov=state.overlap;
+  const curSep=Math.abs((3-3*ov)*(1-alpha));
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-65;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'Separation between p_data and p_θ',yLabel:'Divergence',
+    title:'JSD saturates when supports disjoint — W₁ provides gradient always',
+    xMin:0,xMax:6,yMin:0,yMax:Math.log(2)*1.1,xTicks:6,yTicks:5});
+  plotFill(map,sep,jsd,'#ee4444',0.25);plotLine(map,sep,jsd,'#ee4444',2.5);
+  plotLine(map,sep,w1n,'#4488ee',2.5,true);
+  const{py:l2y}=map(0,Math.log(2));hline(mx,l2y,mx+mw,l2y,'#ee4444',1,[5,3]);lbl('log2  (JSD ceiling)',mx+mw+3,l2y,8,'#ee4444','left');
+  const{px:cpx}=map(curSep,0);hline(cpx,my,cpx,my+mh,'#ffffff',1.5,[4,3]);lbl(`sep=${curSep.toFixed(2)}`,cpx+3,my+16,9,'#fff','left');
+  const lx=mx+10,ly=my+10;
+  [['#ee4444','JS Divergence'],['#4488ee','W₁ (normalised)']].forEach(([c,n],i)=>{hline(lx,ly+i*18,lx+24,ly+i*18,c,2,i===1?[5,4]:[]);lbl(n,lx+28,ly+i*18,10,c,'left');});
+}
+function ganTab2(){
+  const z3=linspace(-8,8,500);
+  const modes=[-4,-2,0,2,4],weights=[0.15,0.2,0.3,0.2,0.15];
+  const p_data=z3.map(x=>modes.reduce((s,m,i)=>s+weights[i]*normpdf(x,m,0.4),0));
+  const p_col=z3.map(x=>normpdf(x,-2,0.5));
+  const yMax=Math.max(...p_data,...p_col)*1.2;
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-65;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'x',yLabel:'Density',
+    title:'Mode Collapse: G maps all z → one mode  (4 modes ignored)',
+    xMin:-8,xMax:8,yMin:0,yMax:yMax,xTicks:8,yTicks:5});
+  plotFill(map,z3,p_data,'#4488ee',0.28);plotLine(map,z3,p_data,'#4488ee',2.5);
+  plotFill(map,z3,p_col,'#ee4444',0.38);plotLine(map,z3,p_col,'#ee4444',2.5);
+  modes.forEach((m,i)=>{
+    const{px,py}=map(m,yMax*0.42);
+    if(m!==-2){lbl('✗',px,py,15,'#ee3333','center');lbl('ignored',px,py+20,9,'#cc4444','center');}
+    else{lbl('all mass',px,py+20,9,'#ee4444','center',true);}
+  });
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','p_data — 5 modes'],['#ee4444','p_θ — collapsed to 1 mode']].forEach(([c,n],i)=>{
+    ctx.save();ctx.fillStyle=c;ctx.globalAlpha=0.6;ctx.fillRect(lx,ly+i*18-6,18,11);ctx.restore();lbl(n,lx+22,ly+i*18,10,c,'left');
+  });
+  lbl('JSD blind to collapse: if p_θ covers the one mode well, JSD stays low regardless of diversity',W/2,H-14,10,'#aa7755','center',false,true);
+}
+function ganTab3(){
+  const nfl=Math.round(state.flowSteps),rng=mulberry32(42),n=700;
+  const eps=[];for(let i=0;i<n;i++) eps.push(randn(rng));
+  let x=[...eps];
+  for(let l=0;l<nfl;l++){
+    switch(l%3){
+      case 0:{const sc=1+0.4*Math.sin(l+1),sh=0.3*(l+1);x=x.map(v=>v*sc+sh);break;}
+      case 1:{x=x.map(v=>2*Math.tanh(v*0.8));break;}
+      case 2:{x=x.map(v=>v+0.15*v*v*v);break;}
+    }
+  }
+  const std_x=Math.sqrt(x.reduce((s,v)=>{const m=x.reduce((a,b)=>a+b,0)/n;return s+(v-m)**2;},0)/n)||1;
+  const bw_x=1.06*std_x*Math.pow(n,-0.2)||0.3,bw_src=1.06*Math.pow(n,-0.2);
+  const xMin=Math.min(...eps)-1,xMax=Math.max(...x)+1;
+  const grid=linspace(xMin,xMax,300);
+  const p_z=grid.map(gv=>eps.reduce((s,e)=>s+normpdf(gv,e,bw_src),0)/n);
+  const p_x=grid.map(gv=>x.reduce((s,e)=>s+normpdf(gv,e,bw_x),0)/n);
+  const yMax=Math.max(...p_z,...p_x)*1.2;
+  const mx=65,my=35,mw=W-mx-30,mh=H-my-70;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'Value',yLabel:'Density (KDE)',
+    title:`Normalizing Flow: ${nfl} bijections warp N(0,1) → complex distribution`,
+    xMin,xMax,yMin:0,yMax,xTicks:8,yTicks:5});
+  plotFill(map,grid,p_z,'#4488ee',0.28);plotLine(map,grid,p_z,'#4488ee',2);
+  plotFill(map,grid,p_x,'#ee44aa',0.28);plotLine(map,grid,p_x,'#ee44aa',2.5);
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','z ~ N(0,1)  source'],['#ee44aa',`x = f_${nfl}∘…∘f₁(z)  (${nfl} transforms)`]].forEach(([c,n],i)=>{hline(lx,ly+i*18,lx+24,ly+i*18,c,2);lbl(n,lx+28,ly+i*18,10,c,'left');});
+  lbl('log p_X(x) = log p_Z(z) + Σ log|det J_{f_k}|   — exact likelihood via change of variables',W/2,H-14,10,'#8866bb','center');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── DIFFUSION ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+function renderDiff(){
+  const T=parseInt(state.totalT)||1000;
+  const{beta,abar}=computeSchedule(T,state.schedule);
+  const t=Math.min(Math.round(state.timestep),T);
+  const ab_t=abar[t-1],bt_t=beta[t-1];
+  const snr=ab_t/(1-ab_t+1e-8);
+  document.getElementById('eqText').textContent=
+    `q(x_t|x_0)=N(√ᾱ_t·x_0,(1−ᾱ_t)I)   t=${t}  ᾱ_t=${ab_t.toFixed(4)}  SNR=${snr.toFixed(3)}  signal=${(Math.sqrt(ab_t)*100).toFixed(0)}%  noise=${(Math.sqrt(1-ab_t)*100).toFixed(0)}%  η=${state.eta.toFixed(2)}`;
+  switch(state.tab){
+    case 0:diffTab0(abar,T,t,ab_t);break;
+    case 1:diffTab1(abar,beta,T,t,ab_t,bt_t);break;
+    case 2:diffTab2(abar,beta,T,t,ab_t);break;
+    case 3:diffTab3(abar,beta,T,t,ab_t);break;
+  }
+}
+function diffTab0(abar,T,t,ab_t){
+  const nF=8,ts=Array.from({length:nF},(_,i)=>Math.round(i*T/(nF-1)));
+  const fW=W/nF,imgSize=Math.min(fW-6,H*0.52-8);
+  const rng=mulberry32(1234);
+  const trueEps=new Float32Array(imgW*imgH);for(let i=0;i<imgW*imgH;i++) trueEps[i]=randn(rng);
+  ts.forEach((tk,k)=>{
+    const ab_k=abar[Math.max(tk-1,0)];
+    const noisy=new Float32Array(imgW*imgH);
+    const rng2=mulberry32(tk+1);
+    for(let i=0;i<imgW*imgH;i++) noisy[i]=tk===0?grayPixels[i]:Math.max(0,Math.min(1,Math.sqrt(ab_k)*grayPixels[i]+Math.sqrt(1-ab_k)*trueEps[i]));
+    const ix=k*fW+(fW-imgSize)/2;
+    drawImageGray(noisy,imgW,imgH,ix,8,imgSize,imgSize);
+    strokeRect(ix,8,imgSize,imgSize,t===tk?'#ffff00':'#444',t===tk?2.5:1);
+    const ll=tk===0?'x₀ clean':tk===T?'x_T noise':`t=${tk}`;
+    lbl(ll,ix+imgSize/2,8+imgSize+12,8,'#aaa','center');
+    lbl(`ᾱ=${abar[Math.max(tk-1,0)].toFixed(3)}`,ix+imgSize/2,8+imgSize+24,7,'#777','center');
+  });
+  // Theory panel below
+  const ty=H*0.58;
+  ctx.fillStyle='#12141e';ctx.fillRect(0,ty,W,H-ty);
+  let y=ty+16;
+  lbl('Forward Process Theory',W/2,y,13,'#a0b4ff','center',true);y+=22;
+  lbl('Step-by-step (Markov):  q(x_t|x_{t-1}) = N(x_t ; √(1−β_t)·x_{t-1}, β_t·I)',W/2,y,11,'#7799dd','center');y+=17;
+  lbl('Closed-form skip (KEY):  q(x_t|x_0) = N(x_t ; √ᾱ_t·x_0, (1−ᾱ_t)·I)',W/2,y,11,'#55cc88','center',true);y+=15;
+  lbl('x_t = √ᾱ_t · x_0  +  √(1−ᾱ_t) · ε,   ε~N(0,I)',W/2,y,12,'#44bb77','center',true);y+=18;
+  lbl(`Live at t=${t}:   √ᾱ_t=${Math.sqrt(ab_t).toFixed(4)}   √(1−ᾱ_t)=${Math.sqrt(1-ab_t).toFixed(4)}`,W/2,y,11,'#cc8844','center',true);y+=15;
+  lbl(`x_t = ${Math.sqrt(ab_t).toFixed(3)}·x₀ + ${Math.sqrt(1-ab_t).toFixed(3)}·ε   →   signal ${(Math.sqrt(ab_t)*100).toFixed(0)}%  noise ${(Math.sqrt(1-ab_t)*100).toFixed(0)}%`,W/2,y,11,'#bb7733','center');y+=15;
+  lbl('No sequential steps needed — jump to any t directly using the closed form!',W/2,y,10,'#888','center',false,true);
+}
+function diffTab1(abar,beta,T,t,ab_t,bt_t){
+  const nF=8,rng=mulberry32(1234);
+  const trueEps=new Float32Array(imgW*imgH);for(let i=0;i<imgW*imgH;i++) trueEps[i]=randn(rng);
+  const x_noisy=new Float32Array(imgW*imgH);
+  for(let i=0;i<imgW*imgH;i++) x_noisy[i]=Math.max(0,Math.min(1,Math.sqrt(ab_t)*grayPixels[i]+Math.sqrt(1-ab_t)*trueEps[i]));
+  const fW=W/nF,imgSize=Math.min(fW-6,H*0.52-8);
+  for(let k=0;k<nF;k++){
+    const frac=k/(nF-1);
+    const disp=new Float32Array(imgW*imgH);
+    for(let i=0;i<imgW*imgH;i++) disp[i]=Math.max(0,Math.min(1,(1-frac)*x_noisy[i]+frac*grayPixels[i]));
+    const ix=k*fW+(fW-imgSize)/2;
+    drawImageGray(disp,imgW,imgH,ix,8,imgSize,imgSize);
+    strokeRect(ix,8,imgSize,imgSize,'#444',1);
+    const stepT=Math.round(t*(1-frac));
+    lbl(k===0?`x_T t=${t}`:k===nF-1?'x₀ clean':`t≈${stepT}`,ix+imgSize/2,8+imgSize+12,8,'#aaa','center');
+  }
+  const ty=H*0.58;
+  ctx.fillStyle='#12141e';ctx.fillRect(0,ty,W,H-ty);
+  const t_prev=Math.max(t-1,1),ab_prev=abar[t_prev-1];
+  const bt_tilde=(1-ab_prev)/(1-ab_t+1e-8)*bt_t;
+  let y=ty+16;
+  lbl('Reverse Process Theory',W/2,y,13,'#a0b4ff','center',true);y+=20;
+  lbl('DDPM (η=1, stochastic):  x_{t-1} = (1/√α_t)(x_t − β_t/√(1−ᾱ_t)·ε_θ) + √β̃_t·z,  z~N(0,I)',W/2,y,11,'#ee6644','center');y+=16;
+  lbl(`β̃_t = (1−ᾱ_{t-1})/(1−ᾱ_t)·β_t = ${bt_tilde.toFixed(6)}   (posterior variance)`,W/2,y,10,'#cc5533','center');y+=15;
+  lbl('DDIM (η=0, deterministic):  x̂₀ = (x_t − √(1−ᾱ_t)·ε_θ)/√ᾱ_t',W/2,y,11,'#44cc77','center',true);y+=15;
+  lbl('x_{t-1} = √ᾱ_{t-1}·x̂₀  +  √(1−ᾱ_{t-1})·ε_θ(x_t,t)',W/2,y,11,'#33bb66','center',true);y+=18;
+  lbl(`Live at t=${t}:  α_t=${(1-bt_t).toFixed(5)}  β_t=${bt_t.toFixed(5)}  β̃_t=${bt_tilde.toFixed(5)}  ᾱ_{t-1}=${ab_prev.toFixed(4)}`,W/2,y,10,'#9966cc','center',true);y+=15;
+  lbl(state.eta<0.1?`DDIM (det., η=${state.eta.toFixed(2)}): same x_T always → same x₀`:`DDPM-like (stoch., η=${state.eta.toFixed(2)}): different runs → different x₀`,W/2,y,10,state.eta<0.1?'#44cc77':'#ee6644','center',false,true);
+}
+function diffTab2(abar,beta,T,t,ab_t){
+  const t_ax=Array.from({length:T},(_,i)=>i+1);
+  const snr=t_ax.map(i=>Math.max(abar[i-1]/(1-abar[i-1]+1e-8),1e-5));
+  const logSnr=snr.map(v=>Math.log10(v));
+  const mx=65,my=30,mw=W-mx-80,mh=(H-my-85)*0.55;
+  const map=drawAxes(mx,my,mw,mh,{xLabel:'Timestep t',yLabel:'ᾱ_t / β_t',
+    title:`${state.schedule} Schedule — T=${T}`,xMin:1,xMax:T,yMin:0,yMax:1,xTicks:5,yTicks:5});
+  plotFill(map,t_ax,Array.from(abar),'#4488ee',0.2);plotLine(map,t_ax,Array.from(abar),'#4488ee',2);
+  plotFill(map,t_ax,Array.from(abar).map(v=>1-v),'#ee4444',0.15);plotLine(map,t_ax,Array.from(abar).map(v=>1-v),'#ee4444',1.5,true);
+  plotLine(map,t_ax,Array.from(beta),'#aa66cc',1.5);
+  const{px:tpx}=map(t,0);hline(tpx,my,tpx,my+mh,'#fff',1.5,[3,3]);lbl(`t=${t}`,tpx+2,my+8,9,'#fff','left');
+  const lx=mx+10,ly=my+10;
+  [['#4488ee','ᾱ_t (signal)'],['#ee4444','1−ᾱ_t (noise)'],['#aa66cc','β_t (step)']].forEach(([c,n],i)=>{hline(lx,ly+i*16,lx+22,ly+i*16,c,2,i===2?[5,4]:[]);lbl(n,lx+26,ly+i*16,9,c,'left');});
+  const my2=my+mh+45,mh2=(H-my-85)*0.35;
+  const snrMin=Math.min(...logSnr)-0.3,snrMax=Math.max(...logSnr)+0.3;
+  const map2=drawAxes(mx,my2,mw,mh2,{xLabel:'Timestep t',yLabel:'log₁₀(SNR)',
+    title:'Signal-to-Noise Ratio  SNR(t) = ᾱ_t/(1−ᾱ_t)',xMin:1,xMax:T,yMin:snrMin,yMax:snrMax,xTicks:5,yTicks:4});
+  plotFill(map2,t_ax,logSnr,'#33cc77',0.22);plotLine(map2,t_ax,logSnr,'#33cc77',2);
+  const{px:tpx2}=map2(t,snrMin);hline(tpx2,my2,tpx2,my2+mh2,'#fff',1.5,[3,3]);
+  lbl(`SNR=${snr[t-1].toFixed(3)}`,tpx2+3,my2+10,9,'#fff','left');
+  lbl(`Live: t=${t}  ᾱ_t=${ab_t.toFixed(4)}  β_t=${beta[t-1].toFixed(5)}  signal=${(Math.sqrt(ab_t)*100).toFixed(0)}%  noise=${(Math.sqrt(1-ab_t)*100).toFixed(0)}%`,W/2,my2+mh2+28,10,'#cc8844','center',true);
+}
+function diffTab3(abar,beta,T,t,ab_t){
+  // Left: score quiver
+  const n=20,xR=4;
+  const gridX=linspace(-xR,xR,n),gridY=linspace(-xR,xR,n);
+  const c1=[-1.5,0],c2=[1.5,0],s2=0.7;
+  const scores=[];
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const x=gridX[j],y=gridY[i];
+    const p1=Math.exp(-((x-c1[0])**2+(y-c1[1])**2)/(2*s2*s2));
+    const p2=Math.exp(-((x-c2[0])**2+(y-c2[1])**2)/(2*s2*s2));
+    const pm=(p1+p2)/2+1e-12;
+    const dpx=-(x-c1[0])*p1/(s2*s2*pm)-(x-c2[0])*p2/(s2*s2*pm);
+    const dpy=-(y-c1[1])*p1/(s2*s2*pm)-(y-c2[1])*p2/(s2*s2*pm);
+    scores.push({x,y,dx:dpx*0.5,dy:dpy*0.5,p:pm});
+  }
+  const margin=28,leftW=(W-margin*2)*0.47,gx=margin,gy=28,gh=H-gy-110;
+  const cX=leftW/n,cY=gh/n;
+  const densFlat=new Float32Array(n*n);scores.forEach((s,i)=>densFlat[i]=s.p);
+  drawImageColormap(densFlat,n,n,gx,gy,leftW,gh,coolColor);
+  strokeRect(gx,gy,leftW,gh,'#666',1);
+  lbl('Score Function  s(x) = ∇_x log p(x)',gx+leftW/2,gy-14,11,'#aac','center',true);
+  const scMax=Math.max(...scores.map(s=>Math.sqrt(s.dx**2+s.dy**2)))+1e-8;
+  const sc=Math.min(cX,cY)*0.45/scMax;
+  scores.forEach((s,k)=>{
+    const i=Math.floor(k/n),j=k%n;
+    const px0=gx+(j+0.5)*cX,py0=gy+(i+0.5)*cY;
+    const dx=s.dx*sc,dy=s.dy*sc;
+    if(Math.abs(dx)+Math.abs(dy)>0.3) arrow(px0,py0,px0+dx,py0-dy,'rgba(255,240,80,0.82)',1.2);
+  });
+  [[c1[0],c1[1],'mode 1'],[c2[0],c2[1],'mode 2']].forEach(([cx2,cy2,ll])=>{
+    const ppx=gx+(cx2+xR)/(2*xR)*leftW,ppy=gy+(xR-cy2)/(2*xR)*gh;
+    circle(ppx,ppy,7,null,'#fff',2);lbl(ll,ppx,ppy-14,9,'#fff','center',true);
+  });
+  // Right: DDIM chain
+  const rx=gx+leftW+28,rw=W-rx-margin,nRevSteps=Math.round(state.revSteps);
+  const nBubbles=Math.min(6,nRevSteps);
+  const revTs=Array.from({length:nBubbles},(_,i)=>Math.round(t-t*i/(nBubbles-1))).reverse();
+  const circR=Math.min(rw/(nBubbles*2.5),30),rowY=gy+gh/2;
+  lbl(state.eta<0.1?`DDIM η=${state.eta.toFixed(2)} deterministic, ${nRevSteps} steps`:`DDPM-like η=${state.eta.toFixed(2)} stochastic`,rx+rw/2,gy+14,10,state.eta<0.1?'#33cc77':'#ee6644','center',true);
+  revTs.forEach((rt,i)=>{
+    const ab_k=abar[Math.max(rt-1,0)];
+    const cx2=rx+rw*(i+0.5)/nBubbles,cy2=rowY;
+    const r2=circR*(0.35+0.65*Math.sqrt(1-ab_k));
+    const[cr,cg,cb]=coolColor(1-ab_k);
+    circle(cx2,cy2,r2,`rgba(${cr},${cg},${cb},0.7)`,`rgb(${cr},${cg},${cb})`,1.5);
+    lbl(`x_${rt}`,cx2,cy2,Math.min(9,r2*0.55),'#fff','center',true);
+    if(i>0){
+      const prev=rx+rw*(i-0.5)/nBubbles;
+      arrow(prev+circR,rowY,cx2-r2-2,rowY,'#888',1.2);
+      lbl('ε_θ',((prev+circR)+(cx2-r2-2))/2,rowY-14,7,'#8888cc','center');
+    }
+  });
+  lbl('Bubble size ∝ noise level',rx+rw/2,rowY+circR+20,9,'#666','center',false,true);
+  // Bottom theory
+  const bty=gy+gh+16;
+  lbl('DDPM ↔ Score:  s_θ(x_t,t) = −ε_θ(x_t,t)/√(1−ᾱ_t)',W/2,bty,11,'#7799cc','center',true);
+  lbl(`L = E||ε − ε_θ(√ᾱ_t·x₀ + √(1−ᾱ_t)·ε, t)||²   DDIM S=20 steps ≈ 50× faster than DDPM T=1000`,W/2,bty+17,10,'#6688bb','center');
+  lbl(`s_θ = −ε_θ/√(1−ᾱ_t) = −ε_θ · ${(1/Math.sqrt(1-ab_t+1e-8)).toFixed(2)}  at current t=${t}`,W/2,bty+33,10,'#cc9944','center',true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THEORY PANE
+// ═══════════════════════════════════════════════════════════════
+const THEORY={
+cnn1:`<div class="theory-block"><div class="theory-h1">CNN Foundations — Theory Reference</div>
+<div class="theory-h2">3 Inductive Biases of CNNs</div>
+<div class="theory-p">1. <b>Local connectivity</b> — each neuron connects only to a K×K patch<br>
+2. <b>Parameter sharing</b> — same filter applied at every spatial location<br>
+3. <b>Translation equivariance</b> — f(shift(x)) = shift(f(x))</div>
+<div class="theory-h2">2D Cross-Correlation</div>
+<div class="theory-eq">Y[i,j] = Σ_m Σ_n  X[i+m, j+n] · W[m,n]
+Note: PyTorch/TF call this "convolution" but it is cross-correlation (no kernel flip).
+True convolution flips W — for symmetric kernels the result is identical.</div>
+<div class="theory-h2">Output Size Formula</div>
+<div class="theory-eq">N_out = ⌊(N + 2P − K) / S⌋ + 1
+K = kernel size,  P = zero-padding,  S = stride,  N = input size</div>
+<div class="theory-h2">Parameter Efficiency</div>
+<div class="theory-eq">Conv layer:  K² params per filter (e.g., 3×3 = 9 — reused at every position)
+FC layer:    H × W × C_in × C_out  (e.g., 224×224×3×64 = 9.6M for ONE layer!)
+Typical ratio: FC / Conv ≈ 100,000× more parameters</div>
+<div class="theory-h2">Receptive Field Growth</div>
+<div class="theory-eq">RF_ℓ = RF_{ℓ-1} + (K−1) · ∏_{k=1}^{ℓ-1} S_k
+Two 3×3 layers: RF=5, 18 params — vs one 5×5 layer: RF=5, 25 params
+But two 3×3 layers have two ReLU nonlinearities → more expressive.</div>
+<div class="theory-insight">Why not fully connected? A 224×224 RGB image has 150K inputs. One FC layer with 1000 neurons = 150M parameters. LeNet-5 solved MNIST with ~60K parameters using convolutions.</div></div>`,
+
+cnn2:`<div class="theory-block"><div class="theory-h1">CNN Architectures — Theory Reference</div>
+<div class="theory-h2">The Degradation Problem</div>
+<div class="theory-p">Adding layers to a plain CNN degrades training accuracy — not overfitting! A 56-layer plain net had higher training error than a 20-layer net (He et al. 2015). The optimizer fails to learn the identity mapping through stacked nonlinearities.</div>
+<div class="theory-h2">Residual Learning</div>
+<div class="theory-eq">H(x) = F(x) + x     →     F(x) = H(x) − x   (learn the residual)
+If identity is optimal:  F(x) → 0  (pushing weights toward zero is easy)
+If correction needed:    F(x) corrects the identity mapping</div>
+<div class="theory-h2">Gradient Highway</div>
+<div class="theory-eq">∂L/∂x₀ = ∂L/∂xₗ · (1 + ∂/∂x₀ Σ F(xₗ, Wₗ))
+The "+1" is a direct gradient path from any layer back to the input.
+Even if all F gradients vanish:  ∂L/∂x₀ = ∂L/∂xₗ · 1 ≠ 0
+This is why ResNet can train 1000+ layers stably.</div>
+<div class="theory-h2">Batch Normalisation</div>
+<div class="theory-eq">μ_B = (1/m)Σxᵢ,   σ²_B = (1/m)Σ(xᵢ−μ_B)²
+x̂ᵢ = (xᵢ−μ_B)/√(σ²_B+ε)
+y = γ·x̂ᵢ + β   (learnable γ and β)
+Benefits: reduces covariate shift, allows larger LR, mild regularisation.</div>
+<div class="theory-insight">Key result: 34-layer plain net had higher test error than 18-layer net. After adding skip connections: 152-layer ResNet beat human-level performance on ImageNet (top-5 error 3.57%).</div></div>`,
+
+rnn:`<div class="theory-block"><div class="theory-h1">RNN / LSTM / GRU — Theory Reference</div>
+<div class="theory-h2">Vanilla RNN and Vanishing Gradients</div>
+<div class="theory-eq">h_t = tanh(W_h·h_{t-1} + W_x·x_t + b)
+∂L/∂h_0 ∝ ∏_{t=1}^{T} (W_h · diag(tanh'(·)))^T
+If ||W_h|| < 1 and tanh' < 1:  gradient → 0  (vanishing)
+If ||W_h|| > 1:                  gradient → ∞  (exploding → clip gradients)</div>
+<div class="theory-h2">LSTM — All 6 Equations</div>
+<div class="theory-eq">f_t = σ(W_f·[h_{t-1};x_t] + b_f)        Forget gate: what to erase
+i_t = σ(W_i·[h_{t-1};x_t] + b_i)        Input gate: what fraction to write
+C̃_t = tanh(W_C·[h_{t-1};x_t] + b_C)     Candidate: new content
+C_t = f_t ⊙ C_{t-1} + i_t ⊙ C̃_t        Cell update  ← GRADIENT HIGHWAY
+o_t = σ(W_o·[h_{t-1};x_t] + b_o)        Output gate: what to expose
+h_t = o_t ⊙ tanh(C_t)                   Hidden state output</div>
+<div class="theory-h2">Cell State Gradient Highway</div>
+<div class="theory-eq">∂C_t/∂C_{t-1} = f_t   (element-wise only — no W matrix, no tanh')
+∂L/∂C_0 = ∂L/∂C_T · ∏ f_t
+When f_t ≈ 1: gradient flows back T steps undiminished.
+Network learns when to forget (f_t→0) vs preserve (f_t→1).</div>
+<div class="theory-h2">GRU (2 gates, ~25% fewer params)</div>
+<div class="theory-eq">r_t = σ(W_r·[h_{t-1};x_t])
+z_t = σ(W_z·[h_{t-1};x_t])
+h̃_t = tanh(W_h·[r_t⊙h_{t-1};x_t])
+h_t = (1−z_t)⊙h_{t-1} + z_t⊙h̃_t    (linear interpolation)</div>
+<div class="theory-insight">LSTM intuition: C_t is a conveyor belt running through time. Gates selectively add or remove information. The forget gate IS the gradient highway — learn f_t≈1 to preserve, f_t≈0 to reset.</div></div>`,
+
+trans:`<div class="theory-block"><div class="theory-h1">Transformer — Theory Reference</div>
+<div class="theory-h2">Scaled Dot-Product Attention</div>
+<div class="theory-eq">Q = X·W^Q,  K = X·W^K,  V = X·W^V      (learned linear projections)
+Attention(Q,K,V) = softmax(Q·Kᵀ / √d_k) · V
+Why √d_k? Dot products grow as O(d_k) → softmax saturates → gradients vanish.
+Dividing by √d_k keeps variance ≈ 1 regardless of d_k.</div>
+<div class="theory-h2">Multi-Head Attention</div>
+<div class="theory-eq">head_i = Attention(Q·W^Q_i, K·W^K_i, V·W^V_i)
+MultiHead = Concat(head_1,...,head_h) · W^O
+Each head specialises: syntax, co-reference, position, etc. — learned from data.</div>
+<div class="theory-h2">Positional Encoding (sinusoidal)</div>
+<div class="theory-eq">PE(pos, 2i)   = sin(pos / 10000^{2i/d_model})
+PE(pos, 2i+1) = cos(pos / 10000^{2i/d_model})
+x̃_pos = x_pos + PE(pos)   — added to embedding, not concatenated
+PE(pos+k) is a linear function of PE(pos) → relative positions encoded.</div>
+<div class="theory-h2">Encoder Block</div>
+<div class="theory-eq">X₁ = LayerNorm(X + MHA(X))
+X₂ = LayerNorm(X₁ + FFN(X₁))
+FFN(x) = max(0, x·W₁+b₁)·W₂+b₂    d_ff = 4·d_model  (e.g. 512→2048→512)
+Complexity: O(n²·d) per layer — quadratic in sequence length.</div>
+<div class="theory-insight">Temperature τ controls sharpness: τ→0 makes attention one-hot (hard selection), τ→∞ makes it uniform (no selection). Standard τ=1 calibrated by the √d_k scaling.</div></div>`,
+
+vae:`<div class="theory-block"><div class="theory-h1">VAE — Theory Reference</div>
+<div class="theory-h2">Generative Model Setup</div>
+<div class="theory-eq">p(x) = ∫ p_θ(x|z) · p(z) dz   — intractable
+Encoder:  q_φ(z|x) = N(μ_φ(x), σ_φ(x)²·I)   — approximate posterior
+Decoder:  p_θ(x|z)  — reconstructs x from z</div>
+<div class="theory-h2">ELBO Derivation</div>
+<div class="theory-eq">log p_θ(x) = ELBO + KL(q_φ(z|x) || p_θ(z|x))   KL ≥ 0
+ELBO = E_{q_φ}[log p_θ(x|z)]  −  KL(q_φ(z|x) || p(z))
+     = Reconstruction           −  Regularisation (pushes q → prior)</div>
+<div class="theory-h2">Closed-Form KL (Gaussian)</div>
+<div class="theory-eq">KL(q_φ || p) = ½ Σ_j (μ_j² + σ_j² − log σ_j² − 1)
+No Monte Carlo needed — exact gradient w.r.t. μ and σ.
+Pushes posterior toward N(0,I): μ→0, σ→1.</div>
+<div class="theory-h2">Reparameterization Trick</div>
+<div class="theory-eq">Problem: z ~ q_φ(z|x) is stochastic → ∂z/∂φ undefined
+Solution: z = μ_φ(x) + σ_φ(x) ⊙ ε,   ε ~ N(0,I)
+Now: ∂z/∂μ = 1,  ∂z/∂σ = ε → backprop flows through the network</div>
+<div class="theory-h2">β-VAE</div>
+<div class="theory-eq">L = E[log p(x|z)] − β·KL    β>1 → disentangled latents
+Posterior collapse: β too large → q_φ(z|x) ≈ p(z), decoder ignores z.</div>
+<div class="theory-insight">VAE vs GAN: VAE gives tractable density (ELBO) + stable training but blurry images. GAN gives sharp images but unstable + no density. Diffusion models combine both strengths.</div></div>`,
+
+gan:`<div class="theory-block"><div class="theory-h1">GAN + Normalizing Flows — Theory Reference</div>
+<div class="theory-h2">GAN Minimax Objective</div>
+<div class="theory-eq">min_G max_D  E_{x~p_data}[log D(x)] + E_{z~p_z}[log(1−D(G(z)))]
+Optimal D*(x) = p_data(x) / (p_data(x) + p_θ(x))
+At equilibrium: D*(x) = 0.5 everywhere</div>
+<div class="theory-h2">GAN = Jensen-Shannon Divergence</div>
+<div class="theory-eq">V(G, D*) = 2·JSD(p_data || p_θ) − 2·log2
+Problem: if supports disjoint → JSD = log2 (saturated) → gradient = 0</div>
+<div class="theory-h2">Wasserstein GAN</div>
+<div class="theory-eq">W₁(p,q) = inf_{γ} E_{(x,y)~γ}[||x−y||]   (Earth Mover Distance)
+Dual:  W₁ = sup_{||f||_L≤1} E_p[f] − E_q[f]   (1-Lipschitz critic)
+Always provides gradient — even with disjoint supports.</div>
+<div class="theory-h2">Normalizing Flows</div>
+<div class="theory-eq">z = f(x)  (invertible),   x = f⁻¹(z)
+log p_X(x) = log p_Z(f(x)) + log|det(∂f/∂x)|
+RealNVP: x_{m+1:d} = z_{m+1:d} ⊙ exp(s(z_{1:m})) + t(z_{1:m})
+Jacobian is triangular → det in O(d) not O(d³)</div>
+<div class="theory-insight">Flows give exact likelihood unlike VAE's lower bound or GAN's no density. But they require invertible architectures → limited expressiveness per layer.</div></div>`,
+
+diff:`<div class="theory-block"><div class="theory-h1">Diffusion Models — Theory Reference  (DDPM + DDIM)</div>
+<div class="theory-h2">Forward Process</div>
+<div class="theory-eq">Markov: q(x_t|x_{t-1}) = N(x_t ; √(1−β_t)·x_{t-1}, β_t·I)
+Closed-form: q(x_t|x_0) = N(x_t ; √ᾱ_t·x_0, (1−ᾱ_t)·I)
+x_t = √ᾱ_t·x_0  +  √(1−ᾱ_t)·ε,   ε~N(0,I)
+ᾱ_t = ∏_{s=1}^{t} (1−β_s)   — no sequential computation needed!</div>
+<div class="theory-h2">Reverse Process — DDPM</div>
+<div class="theory-eq">μ_θ(x_t,t) = (1/√α_t)(x_t − β_t/√(1−ᾱ_t) · ε_θ(x_t,t))
+β̃_t = (1−ᾱ_{t-1})/(1−ᾱ_t) · β_t   (posterior variance)
+Training: L_simple = E||ε − ε_θ(√ᾱ_t·x_0 + √(1−ᾱ_t)·ε, t)||²</div>
+<div class="theory-h2">DDIM — Deterministic Accelerated Sampling</div>
+<div class="theory-eq">Key: only marginals q(x_t|x_0) need to match — not the full joint!
+x̂_0 = (x_t − √(1−ᾱ_t)·ε_θ) / √ᾱ_t
+x_{t-1} = √ᾱ_{t-1}·x̂_0 + √(1−ᾱ_{t-1})·ε_θ
+η=0 → deterministic (same x_T → same x_0)
+η=1 → recovers DDPM stochastic sampling</div>
+<div class="theory-h2">Score Function Connection</div>
+<div class="theory-eq">s(x) = ∇_x log p(x)   points toward high-density regions
+s_θ(x_t,t) = −ε_θ(x_t,t) / √(1−ᾱ_t)
+DDPM IS a score network — it implicitly learns ∇_x log p(x_t).</div>
+<div class="theory-h2">Speed Comparison</div>
+<div class="theory-eq">DDPM:  T=1000 steps × ~50ms = ~50 seconds per image
+DDIM:  S=50 steps = ~2.5 seconds  (20× faster, same trained weights!)
+LDM:   64×64 latent → 50× less compute (Stable Diffusion)
+Why predict ε not x₀?  ε~N(0,I) has same scale at all t → well-conditioned target.</div>
+<div class="theory-insight">Diffusion models = score matching + Langevin dynamics. Training is stable (no adversarial game). Inference is slow but DDIM makes it practical. LDMs (Stable Diffusion) compress into latent space first.</div></div>`
+};
+
+function renderTheory(mod){
+  theoryPane.innerHTML=THEORY[mod]||'<p style="color:#888;padding:20px">Theory coming soon.</p>';
+  theoryPane.classList.add('visible');
+  canvas.style.display='none';
+  plotlyDiv.style.display='none';
+}
+// ═══════════════════════════════════════════════════════════════
+// ANIMATIONS
+// ═══════════════════════════════════════════════════════════════
+async function animateCNN1(btn,lbl){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  const K=Math.round(state.K),S=Math.round(state.S),P=Math.round(state.P);
+  const kernel=getKernel(K,state.filterType);
+  const{fm,outW,outH}=conv2D(grayPixels,imgW,imgH,kernel,K,S,P);
+  const fmShow=new Float32Array(outW*outH);
+  const sR=Math.max(1,Math.floor(outH/10)),sC=Math.max(1,Math.floor(outW/10));
+  let total=0;for(let r=0;r<outH;r+=sR) for(let c=0;c<outW;c+=sC) total++;
+  let step=0;
+  const margin=40,size=Math.min(W-margin*2,H-margin*2-30);
+  const ix=(W-size)/2,iy=(H-size)/2+10;
+  for(let row=0;row<outH&&state.animRunning;row+=sR){
+    for(let col=0;col<outW&&state.animRunning;col+=sC){
+      step++;
+      ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+      drawImageGray(grayPixels,imgW,imgH,ix,iy,size,size);
+      strokeRect(ix,iy,size,size,'#555',1);
+      const cX=size/imgW,cY=size/imgH,half=Math.floor(K/2);
+      const bx=ix+Math.max(Math.min(col*S,imgW-K),0)*cX,by=iy+Math.max(Math.min(row*S,imgH-K),0)*cY;
+      ctx.save();ctx.fillStyle='rgba(255,102,34,0.12)';ctx.fillRect(bx,by,K*cX,K*cY);ctx.restore();
+      strokeRect(bx,by,K*cX,K*cY,'#ff6622',2.5);
+      for(let m=0;m<K;m++) for(let n=0;n<K;n++){
+        const v=kernel[m*K+n];lbl(v.toFixed(1),bx+(n+0.5)*cX,by+(m+0.5)*cY,Math.max(6,Math.min(9,52/K)),v>=0?'#ff8844':'#4488ff','center',true);
+      }
+      fmShow[row*outW+col]=fm[row*outW+col];
+      lbl(`Step ${step}/${total}  dot=${fm[row*outW+col].toFixed(3)}`,W/2,iy-16,10,'#aaa','center');
+      await new Promise(r=>setTimeout(r,28));
+    }
+  }
+  if(state.animRunning){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    drawImageColormap(fm,outW,outH,ix,iy,size,size,jetColor);
+    lbl('Feature map complete',W/2,iy-16,12,'#aac','center',true);
+  }
+  state.animRunning=false;btn.textContent=lbl;
+}
+
+async function animateCNN2(btn,lbl2){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  const stages=['x (input)','Conv 3×3 + BN + ReLU','Conv 3×3 + BN  →  F(x)','Add: F(x) + x','ReLU','H(x) = F(x) + x  ✓'];
+  const colors=['#4488ee','#2244aa','#2244aa','#aa5500','#225522','#225522'];
+  for(let i=0;i<stages.length&&state.animRunning;i++){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    const cx=W/2,bw=300,bh=50;let y=50;
+    lbl('Residual Forward Pass — Step by Step',cx,y,13,'#a0b4ff','center',true);y+=30;
+    for(let j=0;j<=i;j++){
+      const active=j===i;
+      roundRect(cx-bw/2,y,bw,bh,active?colors[j]+'44':'#111',active?colors[j]:'#333',active?2:1,9);
+      lbl(stages[j],cx,y+bh/2,active?12:11,active?'#fff':'#666','center',active);
+      y+=bh+12;
+    }
+    if(i===stages.length-1) lbl('∂L/∂x = ∂L/∂H·(1 + ∂F/∂x)  — "+1" ensures gradient never vanishes!',cx,y+8,11,'#55cc88','center',true);
+    await new Promise(r=>setTimeout(r,650));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+async function animateRNN(btn,lbl2){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  const T=Math.round(state.seqLen),Wn=state.wnorm,rt=state.rnnType;
+  for(let t=1;t<=T&&state.animRunning;t++){
+    const steps=Array.from({length:t+1},(_,i)=>i);
+    let gData,color;
+    if(rt==='Vanilla RNN'){gData=steps.map(s=>(Wn*0.65)**s);color='#e04444';}
+    else if(rt==='LSTM'){gData=steps.map(s=>0.92**s);color='#4488ee';}
+    else{gData=steps.map(s=>(0.5+0.5*0.92)**s);color='#33bb66';}
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    const mx=55,my=35,mw=W-mx-30,mh=H-my-80;
+    drawAxes(mx,my,mw,mh,{xLabel:'Timestep backward',yLabel:'Gradient',
+      title:`${rt}: at t=${t} gradient=${gData[t].toFixed(6)}  ||Wh||=${Wn.toFixed(2)}`,
+      xMin:0,xMax:T,yMin:0,yMax:1,xTicks:Math.min(T,10),yTicks:5});
+    const LM=logMap10(mx,my,mw,mh,T);
+    const bw2=Math.max(1,(mw/T)*0.65);
+    gData.forEach((v,i)=>{const{px,py}=LM(i,v);const{py:pb}=LM(i,1e-10);
+      ctx.save();ctx.globalAlpha=0.75;ctx.fillStyle=color;ctx.fillRect(px-bw2/2,py,bw2,Math.max(pb-py,1));ctx.restore();});
+    plotLine(LM,steps,gData,color,1.8);
+    const{py:thy}=LM(0,0.01);hline(mx,thy,mx+mw,thy,'#555',1,[5,3]);
+    for(let e=-8;e<=0;e+=2){const{py:yl}=LM(0,10**e);if(yl>my&&yl<my+mh)lbl(`1e${e}`,mx-4,yl,8,'#666','right');}
+    await new Promise(r=>setTimeout(r,55));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+async function animateTrans(btn,lbl2){
+  state.animRunning=true;state.tab=1;activateTab(1);btn.textContent='■ Stop';
+  const dk=Math.round(state.dk),tau=state.temp,n=8;
+  const rng=mulberry32(5);
+  const X=[],Wq=[],Wk2=[];
+  for(let i=0;i<n*dk;i++) X.push(randn(rng)/Math.sqrt(dk));
+  for(let i=0;i<dk*dk;i++){Wq.push(randn(rng)/Math.sqrt(dk));Wk2.push(randn(rng)/Math.sqrt(dk));}
+  const Q=new Float32Array(n*dk),K=new Float32Array(n*dk);
+  for(let i=0;i<n;i++) for(let j=0;j<dk;j++){
+    let sq=0,sk=0;for(let l=0;l<dk;l++){sq+=X[i*dk+l]*Wq[l*dk+j];sk+=X[i*dk+l]*Wk2[l*dk+j];}
+    Q[i*dk+j]=sq;K[i*dk+j]=sk;
+  }
+  const E=new Float32Array(n*n);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){let s=0;for(let l=0;l<dk;l++)s+=Q[i*dk+l]*K[j*dk+l];E[i*n+j]=s/Math.sqrt(dk);}
+  const cw=(W-52)/2,ch=Math.min(cw,H-80),x2=26+cw+18,gy=(H-ch)/2,cS=cw/n;
+  for(let qi=0;qi<n&&state.animRunning;qi++){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    lbl(`Query q_${qi+1} → attention scores  τ=${tau.toFixed(2)}  dₖ=${dk}`,W/2,gy-22,11,'#aac','center',true);
+    const Eq=new Float32Array(n*n);for(let j=0;j<n;j++) Eq[qi*n+j]=E[qi*n+j]/tau;
+    const Aq=softmaxRows(Eq,n);
+    for(let j=0;j<n;j++){
+      const v=E[qi*n+j]/Math.sqrt(dk);
+      const t=(Math.max(0,Math.min(1,(v+3)/6)));
+      const[r,g,b]=coolColor(t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(26+j*cS,gy+qi*cS,cS,cS);
+      lbl(v.toFixed(2),26+(j+0.5)*cS,gy+(qi+0.5)*cS,9,v>0?'#000':'#eee','center');
+    }
+    strokeRect(26,gy,cw,ch,'#666',1);
+    for(let j=0;j<n;j++){
+      const v=Aq[qi*n+j];const[r,g,b]=hotColor(v);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(x2+j*cS,gy+qi*cS,cS,cS);
+      lbl(v.toFixed(3),x2+(j+0.5)*cS,gy+(qi+0.5)*cS,9,v>0.4?'#000':'#eee','center');
+    }
+    strokeRect(x2,gy,cw,ch,'#666',1);
+    lbl('Raw scores e_{i,j}=q·kᵀ/√dₖ',26+cw/2,gy-8,10,'#889','center');
+    lbl(`Attention A=softmax(e/τ)  row ${qi+1}`,x2+cw/2,gy-8,10,'#889','center');
+    await new Promise(r=>setTimeout(r,160));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+async function animateVAE(btn,lbl2){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  const mu_start=3.0,sig_start=0.4,mu_end=0.0,sig_end=1.0,N=40;
+  for(let i=0;i<N&&state.animRunning;i++){
+    const frac=i/(N-1);
+    const mu_i=mu_start+(mu_end-mu_start)*frac,sig_i=sig_start+(sig_end-sig_start)*frac;
+    const kl_i=0.5*(mu_i*mu_i+sig_i*sig_i-Math.log(sig_i*sig_i+1e-8)-1);
+    const z=linspace(-5,6,300),prior=z.map(x=>normpdf(x,0,1)),post=z.map(x=>normpdf(x,mu_i,sig_i));
+    const yMax=Math.max(...prior,...post)*1.2;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    const mx=65,my=35,mw=W-mx-30,mh=H-my-75;
+    const map=drawAxes(mx,my,mw,mh,{xLabel:'z',yLabel:'Density',
+      title:`Step ${i+1}/${N} — KL=${kl_i.toFixed(3)}  μ=${mu_i.toFixed(2)}  σ=${sig_i.toFixed(2)}`,
+      xMin:-5,xMax:6,yMin:0,yMax:yMax,xTicks:11,yTicks:5});
+    plotFill(map,z,prior,'#4488ee',0.28);plotLine(map,z,prior,'#4488ee',2.5);
+    plotFill(map,z,post,'#ee4444',0.28);plotLine(map,z,post,'#ee4444',2.5);
+    plotFill(map,z,z.map((_,j)=>Math.min(prior[j],post[j])),'#44cc77',0.5);
+    lbl('KL penalty is pushing q(z|x) → p(z) = N(0,1)',W/2,H-16,10,'#55cc88','center',false,true);
+    await new Promise(r=>setTimeout(r,65));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+async function animateGAN(btn,lbl2){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  for(let step=1;step<=40&&state.animRunning;step++){
+    const alpha=step/40,ov=state.overlap;
+    const mu_fake=(3-3*ov)*(1-alpha)+0*alpha*0.85;
+    const z=linspace(-5,6,300);
+    const p_real=z.map(x=>normpdf(x,0,0.7)),p_fake=z.map(x=>normpdf(x,mu_fake,0.8));
+    const D_star=p_real.map((pr,i)=>pr/(pr+p_fake[i]+1e-8));
+    const yMax=Math.max(...p_real,...p_fake)*1.2;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    const mx=65,my=35,mw=W-mx-30,mh=H-my-70;
+    const map=drawAxes(mx,my,mw,mh,{xLabel:'x',yLabel:'Density',
+      title:`GAN step ${step}/40  μ_fake=${mu_fake.toFixed(2)}  convergence=${Math.round((1-mu_fake/3)*100)}%`,
+      xMin:-5,xMax:6,yMin:0,yMax:yMax,xTicks:11,yTicks:5});
+    plotFill(map,z,p_real,'#4488ee',0.28);plotLine(map,z,p_real,'#4488ee',2.5);
+    plotFill(map,z,p_fake,'#ee4444',0.28);plotLine(map,z,p_fake,'#ee4444',2.5);
+    plotLine(map,z,D_star.map(d=>d*0.65),'#55cc77',2,true);
+    await new Promise(r=>setTimeout(r,75));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+async function animateDiff(btn,lbl2){
+  state.animRunning=true;state.tab=0;activateTab(0);btn.textContent='■ Stop';
+  const T=parseInt(state.totalT)||1000;
+  const{abar}=computeSchedule(T,state.schedule);
+  const rng=mulberry32(1234);
+  const trueEps=new Float32Array(imgW*imgH);for(let i=0;i<imgW*imgH;i++) trueEps[i]=randn(rng);
+  const nF=16,fwdTs=Array.from({length:nF},(_,i)=>Math.round(i*T/(nF-1)));
+  const size=Math.min(W,H)*0.55,sx=(W-size)/2,sy=(H-size)/2-20;
+  // Forward
+  for(let k=0;k<nF&&state.animRunning;k++){
+    const tk=fwdTs[k],ab_k=abar[Math.max(tk-1,0)];
+    const noisy=new Float32Array(imgW*imgH);
+    for(let i=0;i<imgW*imgH;i++) noisy[i]=tk===0?grayPixels[i]:Math.max(0,Math.min(1,Math.sqrt(ab_k)*grayPixels[i]+Math.sqrt(1-ab_k)*trueEps[i]));
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    drawImageGray(noisy,imgW,imgH,sx,sy,size,size);
+    const ll=tk===0?'x₀ (clean)':tk===T?'x_T (pure noise)':`x_t  t=${tk}`;
+    lbl(`FORWARD: ${ll}`,W/2,28,13,'#4488ee','center',true);
+    lbl(`x_t = ${Math.sqrt(ab_k).toFixed(3)}·x₀ + ${Math.sqrt(1-ab_k).toFixed(3)}·ε   signal=${(Math.sqrt(ab_k)*100).toFixed(0)}%  noise=${(Math.sqrt(1-ab_k)*100).toFixed(0)}%`,W/2,H-48,11,'#aaa','center');
+    const bw2=W*0.6,bx2=(W-bw2)/2,by2=H-26;
+    ctx.fillStyle='#2a3a4a';ctx.fillRect(bx2,by2,bw2,12);
+    ctx.fillStyle='#4488ee';ctx.fillRect(bx2,by2,bw2*(k+1)/nF,12);
+    lbl(`Adding noise: ${Math.round((k+1)/nF*100)}%`,W/2,H-12,9,'#889','center');
+    await new Promise(r=>setTimeout(r,90));
+  }
+  if(!state.animRunning){state.animRunning=false;btn.textContent=lbl2;return;}
+  await new Promise(r=>setTimeout(r,350));
+  // Reverse
+  for(let k=nF-1;k>=0&&state.animRunning;k--){
+    const tk=fwdTs[k],ab_k=abar[Math.max(tk-1,0)];
+    const frac=(nF-1-k)/(nF-1);
+    const recovered=new Float32Array(imgW*imgH);
+    for(let i=0;i<imgW*imgH;i++){
+      const noisy=Math.max(0,Math.min(1,Math.sqrt(ab_k)*grayPixels[i]+Math.sqrt(1-ab_k)*trueEps[i]));
+      recovered[i]=Math.max(0,Math.min(1,(1-frac)*noisy+frac*grayPixels[i]));
+    }
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+    drawImageGray(recovered,imgW,imgH,sx,sy,size,size);
+    lbl(`REVERSE: denoising  t=${tk} → 0`,W/2,28,13,'#33cc77','center',true);
+    lbl('ε_θ predicts noise → x̂₀ = (x_t − √(1−ᾱ_t)·ε_θ)/√ᾱ_t',W/2,H-48,11,'#aaa','center');
+    const bw2=W*0.6,bx2=(W-bw2)/2,by2=H-26;
+    ctx.fillStyle='#2a3a4a';ctx.fillRect(bx2,by2,bw2,12);
+    ctx.fillStyle='#33cc77';ctx.fillRect(bx2,by2,bw2*(nF-k)/nF,12);
+    lbl(`Removing noise: ${Math.round((nF-k)/nF*100)}%`,W/2,H-12,9,'#889','center');
+    await new Promise(r=>setTimeout(r,90));
+  }
+  state.animRunning=false;btn.textContent=lbl2;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMAGE UPLOAD
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('uploadBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange=function(){
+  const file=this.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img2=new Image();
+    img2.onload=()=>{
+      const maxS=256,scale=Math.min(maxS/img2.width,maxS/img2.height,1);
+      const nw=Math.round(img2.width*scale),nh=Math.round(img2.height*scale);
+      const off=document.createElement('canvas');off.width=nw;off.height=nh;
+      off.getContext('2d').drawImage(img2,0,0,nw,nh);
+      setImage(off.getContext('2d').getImageData(0,0,nw,nh),nw,nh);
+      const name=file.name.length>28?'...'+file.name.slice(-24):file.name;
+      document.getElementById('imgLabel').textContent='Loaded: '+name;
+      render();
+    };
+    img2.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE SWITCHING
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.mod-btn').forEach(b=>{
+  b.onclick=()=>{
+    state.animRunning=false;
+    document.querySelectorAll('.mod-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state.mod=b.dataset.mod;
+    state.tab=0;
+    buildUI(state.mod);
+    render();
+  };
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS RESIZE & INIT
+// ═══════════════════════════════════════════════════════════════
+function resizeCanvas(){
+  const wrap=document.getElementById('canvasWrap');
+  W=wrap.clientWidth;H=wrap.clientHeight;
+  canvas.width=W;canvas.height=H;
+  render();
+}
+window.addEventListener('resize',resizeCanvas);
+makeTestImage();
+buildUI('cnn1');
+resizeCanvas();
+
+</script>
+</body>
+</html>
