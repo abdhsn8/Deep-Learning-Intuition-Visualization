@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Interactive visualizer for deep learning architectures",
   "main": "main.js",
-  "author": "Abdullah Hasan",
+  "author": "Abdullah Hasan <abdul@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
